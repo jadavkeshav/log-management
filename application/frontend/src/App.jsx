@@ -3,6 +3,7 @@ import Navigation from './components/Navigation';
 import ProjectCard from './components/ProjectCard';
 import ProjectDetails from './components/ProjectDetails';
 import NewProjectModal from './components/NewProjectModal';
+import axios from "axios"
 
 // Dummy data
 const dummyProjects = [
@@ -81,6 +82,7 @@ function App() {
         trafficData: [],
         recentLogs: []
       };
+      console.log(project)
       setProjects([...projects, project]);
       setNewProject({ name: '', description: '', routes: [] });
       setShowNewProjectModal(false);
