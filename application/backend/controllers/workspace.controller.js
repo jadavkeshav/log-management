@@ -48,17 +48,32 @@ exports.createWorkspace = async (req, res, next) => {
 
 exports.getWorkspaces = async (req, res, next) => {
   try {
-    const workspaces = await Workspace.find({ user: req.user._id })
+    const workspaces = await Workspace.find({ user: req.user._id });
+
+    const workspaceData = await Promise.all(
+      workspaces.map(async (workspace) => {
+        const apiKeyDoc = await APIKey.findOne({
+          workspace: workspace._id,
+          revoked: false,
+        }).sort({ createdAt: -1 }); // Get the latest if multiple
+
+        return {
+          ...workspace.toObject(),
+          apiKey: apiKeyDoc ? apiKeyDoc.key : null,
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: workspaces.length,
-      data: workspaces,
-    })
+      count: workspaceData.length,
+      data: workspaceData,
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
+
 
 exports.getWorkspace = async (req, res, next) => {
   try {
@@ -83,62 +98,138 @@ exports.getWorkspace = async (req, res, next) => {
   }
 }
 
+// exports.updateWorkspace = async (req, res, next) => {
+//   try {
+//     const { name, description } = req.body
+
+//     let workspace = await Workspace.findOne({
+//       _id: req.params.id,
+//       user: req.user._id,
+//     })
+
+//     if (!workspace) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Workspace not found",
+//       })
+//     }
+
+//     workspace = await Workspace.findByIdAndUpdate(
+//       req.params.id,
+//       { name, description },
+//       { new: true, runValidators: true },
+//     )
+
+//     res.status(200).json({
+//       success: true,
+//       data: workspace,
+//     })
+//   } catch (error) {
+//     next(error)
+//   }
+// }
+
 exports.updateWorkspace = async (req, res, next) => {
   try {
-    const { name, description } = req.body
+    const { name, description } = req.body;
 
     let workspace = await Workspace.findOne({
       _id: req.params.id,
       user: req.user._id,
-    })
+    });
 
     if (!workspace) {
       return res.status(404).json({
         success: false,
         message: "Workspace not found",
-      })
+      });
     }
 
     workspace = await Workspace.findByIdAndUpdate(
       req.params.id,
       { name, description },
       { new: true, runValidators: true },
-    )
+    );
+
+    const apiKeyDoc = await APIKey.findOne({
+      workspace: workspace._id,
+      revoked: false,
+    }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      data: workspace,
-    })
+      data: {
+        ...workspace.toObject(),
+        apiKey: apiKeyDoc ? apiKeyDoc.key : null,
+      },
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
+
+
+// exports.deleteWorkspace = async (req, res, next) => {
+//   try {
+//     const workspace = await Workspace.findOne({
+//       _id: req.params.id,
+//       user: req.user._id,
+//     })
+
+//     if (!workspace) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Workspace not found",
+//       })
+//     }
+
+//     await workspace.remove()
+
+//     await User.findByIdAndUpdate(req.user._id, { $pull: { workspaces: req.params.id } })
+
+//     await APIKey.updateMany({ workspace: req.params.id }, { revoked: true })
+
+//     res.status(200).json({
+//       success: true,
+//       data: {},
+//     })
+//   } catch (error) {
+//     next(error)
+//   }
+// }
 
 exports.deleteWorkspace = async (req, res, next) => {
   try {
     const workspace = await Workspace.findOne({
       _id: req.params.id,
       user: req.user._id,
-    })
+    });
 
     if (!workspace) {
       return res.status(404).json({
         success: false,
         message: "Workspace not found",
-      })
+      });
     }
 
-    await workspace.remove()
+    const apiKeyDoc = await APIKey.findOne({
+      workspace: workspace._id,
+      revoked: false,
+    }).sort({ createdAt: -1 });
 
-    await User.findByIdAndUpdate(req.user._id, { $pull: { workspaces: req.params.id } })
-
-    await APIKey.updateMany({ workspace: req.params.id }, { revoked: true })
+    await workspace.remove();
+    await User.findByIdAndUpdate(req.user._id, { $pull: { workspaces: req.params.id } });
+    await APIKey.updateMany({ workspace: req.params.id }, { revoked: true });
 
     res.status(200).json({
       success: true,
-      data: {},
-    })
+      message: "Workspace and associated keys removed",
+      data: {
+        ...workspace.toObject(),
+        apiKey: apiKeyDoc ? apiKeyDoc.key : null,
+      },
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
