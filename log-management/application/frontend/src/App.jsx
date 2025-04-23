@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import ProjectCard from './components/ProjectCard';
 import ProjectDetails from './components/ProjectDetails';
 import NewProjectModal from './components/NewProjectModal';
+import Login from './components/Login';
+import Signup from './components/Signup';
+import Sidebar from './components/Sidebar';
+import Chatbot from './components/Chatbot';
 
 // Dummy data
 const dummyProjects = [
@@ -62,6 +67,7 @@ function App() {
   const [projects, setProjects] = useState(dummyProjects);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -87,38 +93,63 @@ function App() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50" style={{"width": "100vw"}}>
-      <Navigation onNewProject={() => setShowNewProjectModal(true)} />
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!selectedProject ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map(project => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onClick={setSelectedProject}
-              />
-            ))}
-          </div>
-        ) : (
-          <ProjectDetails
-            project={selectedProject}
-            onBack={() => setSelectedProject(null)}
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-50" style={{ "width": "100vw" }}>
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          toggleSidebar={toggleSidebar} 
+          onNewProject={() => setShowNewProjectModal(true)}
+        />
+        <Navigation onNewProject={() => setShowNewProjectModal(true)} />
+
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {!selectedProject ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.map(project => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onClick={setSelectedProject}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <ProjectDetails
+                  project={selectedProject}
+                  onBack={() => setSelectedProject(null)}
+                />
+              )}
+            </main>
+          } />
+          <Route path="/chatbot" element={
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+                <Chatbot projects={projects} />
+              </div>
+            </div>
+          } />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+
+        {showNewProjectModal && (
+          <NewProjectModal
+            project={newProject}
+            onClose={() => setShowNewProjectModal(false)}
+            onCreate={handleCreateProject}
+            onChange={setNewProject}
           />
         )}
-      </main>
-
-      {showNewProjectModal && (
-        <NewProjectModal
-          project={newProject}
-          onClose={() => setShowNewProjectModal(false)}
-          onCreate={handleCreateProject}
-          onChange={setNewProject}
-        />
-      )}
-    </div>
+      </div>
+    </Router>
   );
 }
 
