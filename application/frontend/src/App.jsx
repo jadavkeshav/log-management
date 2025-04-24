@@ -137,6 +137,7 @@ import Signup from "./components/Signup";
 import axios from "axios";
 import { createContext } from "react";
 import { lookInSession, removeFromSession, storeIsSession } from "./utils/session";
+import MiddlewareDocs from "./components/MiddleWareDocs";
 // Dummy data
 // const dummyProjects = [
 // 	{
@@ -343,21 +344,19 @@ function App() {
 							path="/dashboard"
 							element={
 								<PrivateRoute>
-									<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-										{!selectedProject ? (
-											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-												{projects && projects?.map((project) => (
-													<ProjectCard key={project._id} project={project} onClick={setSelectedProject} />
-												))}
-											</div>
-										) : (
-											<ProjectDetails project={selectedProject} onBack={() => setSelectedProject(null)} />
-										)}
-									</main>
+									<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{!selectedProject ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{projects && projects?.map((project) => <ProjectCard key={project._id} project={project} onClick={setSelectedProject} />)}</div> : <ProjectDetails project={selectedProject} onBack={() => setSelectedProject(null)} />}</main>
 								</PrivateRoute>
 							}
 						/>
 						{/* Catch all: redirect based on auth */}
+						<Route
+							path="/docs"
+							element={
+								<PublicRoute>
+									<MiddlewareDocs />
+								</PublicRoute>
+							}
+						/>
 						<Route path="*" element={userAuth?.token ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
 					</Routes>
 

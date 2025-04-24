@@ -10,7 +10,6 @@
 	"license": "ISC",
 	"description": "",
 	"dependencies": {
-		"@fluvio/client": "^0.14.9",
 		"bcryptjs": "^3.0.2",
 		"cors": "^2.8.5",
 		"dotenv": "^16.5.0",
@@ -19,12 +18,5 @@
 		"mongoose": "^8.13.2",
 		"request-ip": "^3.3.0",
 		"ws": "^8.18.1"
-	},
-	"devDependencies": {
-		"@fluvio/client": "^0.14.9",
-		"@types/node": "^22.14.1"
-	},
-	"peerDependencies": {
-		"@fluvio/client": "^0.14.9"
 	}
 }

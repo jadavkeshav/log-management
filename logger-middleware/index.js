@@ -3,7 +3,7 @@ const requestIp = require('request-ip');
 
 const WS_SERVER_URL = 'ws://localhost:5000/ws';
 
-function createLoggerMiddleware(apiKey) {
+function createLoggerMiddleware({apiKey}) {
     if (!apiKey) {
         console.error('❌ API key not found, please set the API_KEY environment variable');
         process.exit(1);
