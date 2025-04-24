@@ -14,12 +14,12 @@ function Navigation({ onNewProject, isAuthenticated, onLogout }) {
   const handleLogout = () => {
     logOutUser();
     onLogout(); // Call the logout function passed as a prop
-    navigate('/'); // redirect to home
+    navigate('/');// redirect to home
   };
 
 
   return (
-    <nav className="bg-white shadow-lg" style={{ "position": "absolute", "top": "0px", "left": "0px", "right": "0px", "z-index": "2" }}>
+    <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
