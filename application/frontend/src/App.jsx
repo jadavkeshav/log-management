@@ -138,6 +138,8 @@ import axios from "axios";
 import { createContext } from "react";
 import { lookInSession, removeFromSession, storeIsSession } from "./utils/session";
 import MiddlewareDocs from "./components/MiddleWareDocs";
+import HomePage from "./components/HomePage";
+import GettingStartedPage from "./components/GettingStartedPage";
 // Dummy data
 // const dummyProjects = [
 // 	{
@@ -322,10 +324,25 @@ function App() {
 						/>
 						<Route path="*" element={<Navigate to="/" />} />
 					</Routes> */}
-
 					<Routes>
 						<Route
 							path="/"
+							element={
+								<PublicRoute>
+									<HomePage />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/getting-started"
+							element={
+								<PublicRoute>
+									<GettingStartedPage />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/signin"
 							element={
 								<PublicRoute>
 									<Login />
@@ -359,7 +376,6 @@ function App() {
 						/>
 						<Route path="*" element={userAuth?.token ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
 					</Routes>
-
 					{userAuth?.token && showNewProjectModal && <NewProjectModal project={newProject} onClose={() => setShowNewProjectModal(false)} onCreate={handleCreateProject} onChange={setNewProject} />}
 				</UserContext.Provider>
 			</div>
