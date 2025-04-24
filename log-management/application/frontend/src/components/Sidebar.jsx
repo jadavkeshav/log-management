@@ -3,7 +3,7 @@ import { Menu, Plus, Home, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-function Sidebar({ isOpen, toggleSidebar, onNewProject }) {
+function Sidebar({ isOpen, toggleSidebar }) {
   return (
     <>
       <button
@@ -34,7 +34,7 @@ function Sidebar({ isOpen, toggleSidebar, onNewProject }) {
               <span>View All Projects</span>
             </Link>
 
-            <button
+            {/* <button
               onClick={() => {
                 onNewProject();
                 toggleSidebar();
@@ -43,7 +43,7 @@ function Sidebar({ isOpen, toggleSidebar, onNewProject }) {
             >
               <Plus className="h-5 w-5 text-gray-600" />
               <span>New Project</span>
-            </button>
+            </button> */}
 
             <Link
               to="/chatbot"
@@ -68,3 +68,4 @@ function Sidebar({ isOpen, toggleSidebar, onNewProject }) {
 }
 
 export default Sidebar;
+
