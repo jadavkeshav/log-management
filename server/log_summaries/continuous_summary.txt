@@ -1,0 +1,48 @@
+--- SUMMARY FOR 2025-04-25 06:32:37 ---
+Time Range: 2025-04-25 00:59:54.723000+00:00 to 2025-04-25 01:02:23.280000+00:00
+Total Logs: 65
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /api/books: 65
+
+Method Distribution:
+ - 0: 65
+
+Status Code Distribution:
+ - 200: 65
+
+--------------------------------------------------
+
+--- SUMMARY FOR 2025-04-25 06:40:26 ---
+Time Range: 2025-04-25 01:10:26.663000+00:00 to 2025-04-25 01:10:26.663000+00:00
+Total Logs: 1
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /api/books: 1
+
+Method Distribution:
+ - 0: 1
+
+Status Code Distribution:
+ - 200: 1
+
+--------------------------------------------------
+
+--- SUMMARY FOR 2025-04-25 09:48:34 ---
+Time Range: 2025-04-25 04:17:49.387000+00:00 to 2025-04-25 04:18:01.372000+00:00
+Total Logs: 6
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /api/books: 6
+
+Method Distribution:
+ - 0: 6
+
+Status Code Distribution:
+ - 200: 6
+
+--------------------------------------------------
+
