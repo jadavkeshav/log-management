@@ -41,6 +41,7 @@ function ProjectDetails({ project, onBack }) {
         <button
           onClick={handleCopy}
           className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center transition"
+          style={{ "background-color": "blue" }}
         >
           {copied ? (
             <>

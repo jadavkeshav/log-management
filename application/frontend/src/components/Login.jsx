@@ -30,7 +30,7 @@ function Login() {
 				console.error(response);
 			});
 
-		navigate("/");
+		navigate("/dashboard");
 	};
 
 	return (

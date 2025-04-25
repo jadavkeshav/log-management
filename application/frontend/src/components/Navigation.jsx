@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Activity, Plus, LogIn, UserPlus, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { logOutUser, lookInSession } from '../utils/session';
+import Sidebar from './Sidebar';
 
 function Navigation({ onNewProject, isAuthenticated, onLogout }) {
   const navigate = useNavigate();
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
   const handleLogout = () => {
     logOutUser();
     onLogout(); // Call the logout function passed as a prop
-    navigate('/'); // redirect to home
+    navigate('/');// redirect to home
   };
 
 
@@ -22,8 +27,16 @@ function Navigation({ onNewProject, isAuthenticated, onLogout }) {
             <span className="ml-2 text-xl font-semibold">Log Analysis Dashboard</span>
           </div>
           <div className="flex items-center space-x-4">
+          <div>
+            <Link to="/docs"><h5>Docs</h5></Link>
+          </div>
+          <div>
+            <Link to="/getting-started"><h5>Getting Started</h5></Link>
+          </div>
             {isAuthenticated ? (
               <>
+                <Sidebar isOpen={isSidebarOpen} 
+          toggleSidebar={toggleSidebar} />
                 <button
                   onClick={onNewProject}
                   className="inline-flex items-center px-6 py-3 border-2 border-blue-600 rounded-lg shadow-lg 
@@ -50,7 +63,7 @@ function Navigation({ onNewProject, isAuthenticated, onLogout }) {
             ) : (
               <>
                 <Link
-                  to="/"
+                  to="/signin"
                   className="inline-flex items-center px-6 py-3 border-2 border-green-600 rounded-lg 
                   text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 
                   hover:from-green-700 hover:to-green-800 transform hover:scale-105 
