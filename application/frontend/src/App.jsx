@@ -216,7 +216,6 @@ const PublicRoute = ({ children }) => {
 };
 
 export const UserContext = createContext({});
-
 function App() {
   const [userAuth, setUserAuth] = useState({});
 

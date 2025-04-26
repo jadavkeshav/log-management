@@ -29,7 +29,6 @@ function Login() {
 			.catch((response) => {
 				console.error(response);
 			});
-
 		navigate("/dashboard");
 	};
 
