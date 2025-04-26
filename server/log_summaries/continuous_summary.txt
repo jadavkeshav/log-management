@@ -46,3 +46,35 @@ Status Code Distribution:
 
 --------------------------------------------------
 
+--- SUMMARY FOR 2025-04-26 20:11:15 ---
+Time Range: 2025-04-26 14:39:32.746000+00:00 to 2025-04-26 14:39:32.746000+00:00
+Total Logs: 1
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /: 1
+
+Method Distribution:
+ - 0: 1
+
+Status Code Distribution:
+ - 200: 1
+
+--------------------------------------------------
+
+--- SUMMARY FOR 2025-04-26 20:15:39 ---
+Time Range: 2025-04-26 14:42:41.453000+00:00 to 2025-04-26 14:42:43.565000+00:00
+Total Logs: 17
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /post: 17
+
+Method Distribution:
+ - 0: 17
+
+Status Code Distribution:
+ - 200: 17
+
+--------------------------------------------------
+

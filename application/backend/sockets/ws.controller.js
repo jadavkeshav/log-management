@@ -1,9 +1,10 @@
 const WebSocket = require('ws');
 const ApiKeyModel = require('../models/APIKey.model');
+const LogModel = require('../models/log.model');
 
 // Setup WebSocket client for connecting to server.py
 let serverPyClient = null;
-const SERVER_PY_URL = 'ws://localhost:5001/ws/application';
+const SERVER_PY_URL = 'ws://127.0.0.1:5001/ws/application';
 
 function setupServerPyConnection() {
     if (serverPyClient) {
@@ -58,7 +59,7 @@ function forwardLogToServerPy(logData) {
 
 function setupWebSocket(server) {
     const wss = new WebSocket.Server({ server, path: "/ws" });
-    
+
     // Setup connection to server.py
     setupServerPyConnection();
 
@@ -93,9 +94,24 @@ function setupWebSocket(server) {
                         return;
                     }
                     console.log('📥 Received log from client:', JSON.stringify(data.log).substring(0, 200) + '...');
-                    
+                    console.log(data.log)
+
                     // Forward the log to server.py
-                    forwardLogToServerPy(data.log);
+                    // forwardLogToServerPy(data.log);
+
+                    try {
+                        let logdata = {
+                            apiKey: data.apiKey,
+                            ...data.log,
+                        };
+                        console.log(logdata);
+                        const newLog = new LogModel(logdata);
+                        await newLog.save();
+                        console.log('✅ Log saved to MongoDB');
+                    } catch (err) {
+                        console.error('⚠️ Failed to save log to MongoDB:', err.message);
+                    }
+
                 }
             } catch (err) {
                 console.error('⚠️ Failed to process message:', err.message);
