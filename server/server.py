@@ -19,6 +19,18 @@ import uvicorn
 import logging
 from pydantic import BaseModel
 
+def convert_timestamps_to_iso(obj):
+    """Recursively convert MongoDB Timestamp objects to ISO format strings"""
+    if isinstance(obj, dict):
+        return {key: convert_timestamps_to_iso(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_timestamps_to_iso(item) for item in obj]
+    elif isinstance(obj, pd.Timestamp):
+        return obj.isoformat()
+    elif hasattr(obj, 'isoformat'):  # For datetime objects
+        return obj.isoformat()
+    return obj
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,  # Changed from INFO to DEBUG for more verbose output
@@ -475,10 +487,19 @@ async def anomaly_detection(log_batch: LogBatch):
     along with historical context.
     """
     try:
+        logger.debug(f"Received anomaly detection request with {len(log_batch.logs)} logs")
         start_time = datetime.now()
         
         # Extract and process logs from the request
-        logs_data = [prepare_log_features(log.dict()) for log in log_batch.logs]
+        try:
+            logs_data = [prepare_log_features(log.dict()) for log in log_batch.logs]
+            logger.debug(f"Processed {len(logs_data)} logs through feature engineering")
+        except Exception as e:
+            logger.error(f"Error processing log features: {e}")
+            return JSONResponse(
+                status_code=400,
+                content={"message": f"Error processing logs: {str(e)}"}
+            )
         
         if not logs_data:
             return JSONResponse(
@@ -487,30 +508,47 @@ async def anomaly_detection(log_batch: LogBatch):
             )
         
         # Process anomalies using the Isolation Forest model
-        logs_with_anomalies = detect_anomalies(logs_data)
-        
-        # Count anomalies
-        anomaly_count = sum(1 for log in logs_with_anomalies if log.get("anomaly", 0) == -1)
+        try:
+            logs_with_anomalies = detect_anomalies(logs_data)
+            anomaly_count = sum(1 for log in logs_with_anomalies if log.get("anomaly", 0) == -1)
+            logger.debug(f"Detected {anomaly_count} anomalies in {len(logs_with_anomalies)} logs")
+        except Exception as e:
+            logger.error(f"Error in anomaly detection: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"message": f"Error detecting anomalies: {str(e)}"}
+            )
         
         # Extract anomaly details
-        anomaly_details = [
-            {
-                "timestamp": log.get("timestamp"),
-                "ip": log.get("ip"),
-                "method": log.get("method"),
-                "url": log.get("url"),
-                "status_code": log.get("status_code"),
-                "anomaly_score": log.get("anomaly_score")
-            }
-            for log in logs_with_anomalies if log.get("anomaly", 0) == -1
-        ]
+        try:
+            anomaly_details = [
+                {
+                    "timestamp": log.get("timestamp"),
+                    "ip": log.get("ip"),
+                    "method": log.get("method"),
+                    "url": log.get("url"),
+                    "status_code": log.get("status_code"),
+                    "anomaly_score": log.get("anomaly_score")
+                }
+                for log in logs_with_anomalies if log.get("anomaly", 0) == -1
+            ]
+        except Exception as e:
+            logger.error(f"Error extracting anomaly details: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"message": f"Error processing anomaly details: {str(e)}"}
+            )
         
         # Add logs to buffer and ChromaDB (if not empty)
         if logs_with_anomalies:
-            global log_buffer
-            log_buffer.extend(logs_with_anomalies)
-            store_logs_in_chromadb(logs_with_anomalies)
-            logger.info(f"Added {len(logs_with_anomalies)} logs to buffer. Current size: {len(log_buffer)}")
+            try:
+                global log_buffer
+                log_buffer.extend(logs_with_anomalies)
+                store_result = store_logs_in_chromadb(logs_with_anomalies)
+                logger.debug(f"Stored logs in ChromaDB: {store_result}")
+            except Exception as e:
+                logger.error(f"Error storing logs: {e}")
+                # Don't return error here, continue processing
         
         # Get historical context from log buffer
         historical_logs = log_buffer[-100:]  # Get last 100 logs for context
@@ -518,7 +556,7 @@ async def anomaly_detection(log_batch: LogBatch):
         # Check if we need to generate a summary (asynchronously)
         asyncio.create_task(process_logs_and_generate_summary())
         
-        # Prepare response with both current and historical logs
+        # Prepare response
         response = {
             "current_analysis": {
                 "total_logs": len(logs_with_anomalies),
@@ -533,10 +571,11 @@ async def anomaly_detection(log_batch: LogBatch):
             "prediction_time": (datetime.now() - start_time).total_seconds()
         }
         
+        logger.debug(f"Completed anomaly detection request in {response['prediction_time']} seconds")
         return response
     
     except Exception as e:
-        logger.error(f"Error in anomaly detection endpoint: {e}")
+        logger.error(f"Error in anomaly detection endpoint: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"message": f"Error: {str(e)}"}
@@ -695,7 +734,6 @@ async def application_websocket_endpoint(websocket: WebSocket):
                 # Handle batch logs
                 logs_batch = message["logs"]
                 logger.info(f"📚 Received batch of {len(logs_batch)} logs from application backend {app_client_id}")
-                print(f"\n📚 RECEIVED BATCH OF {len(logs_batch)} LOGS\n")
                 
                 processed_logs = []
                 for log in logs_batch:
@@ -703,29 +741,35 @@ async def application_websocket_endpoint(websocket: WebSocket):
                     processed_logs.append(processed_log)
                     log_buffer.append(processed_log)
                 
-                # Store logs in ChromaDB
-                if processed_logs:
-                    store_result = store_logs_in_chromadb(processed_logs)
-                    logger.info(f"💾 Stored {len(processed_logs)} logs in ChromaDB: {store_result}")
-                    print(f"\n💾 STORED {len(processed_logs)} LOGS IN CHROMADB. BUFFER SIZE: {len(log_buffer)}\n")
-                
                 # Process for anomalies and broadcast results
                 logs_with_anomalies = detect_anomalies(processed_logs)
-                anomaly_count = sum(1 for log in logs_with_anomalies if log.get("anomaly", 0) == -1)
-                logger.info(f"🔍 Detected {anomaly_count} anomalies in {len(logs_with_anomalies)} logs")
                 
-                # Broadcast anomaly information to connected clients
-                await manager.broadcast({
-                    "type": "anomaly_update",
-                    "total_logs": len(processed_logs),
+                # Transform logs to include is_anomaly flag
+                for log in logs_with_anomalies:
+                    log["is_anomaly"] = log.get("anomaly", 0) == -1
+                    # Keep anomaly_score but remove the raw anomaly value
+                    log.pop("anomaly", None)
+                
+                anomaly_count = sum(1 for log in logs_with_anomalies if log["is_anomaly"])
+                
+                # Convert timestamps before sending
+                response_data = {
+                    "type": "logs_received",
+                    "logs": logs_with_anomalies,
+                    "total_logs": len(logs_with_anomalies),
                     "anomalies_detected": anomaly_count
-                })
+                }
                 
-                # Acknowledge receipt
-                await websocket.send_json({
-                    "type": "logs_received", 
-                    "message": f"Processed {len(processed_logs)} logs, detected {anomaly_count} anomalies"
-                })
+                # Convert any timestamps in the response to ISO format
+                response_data = convert_timestamps_to_iso(response_data)
+                
+                # Send response with detailed log information
+                await websocket.send_json(response_data)
+                
+                # Store in ChromaDB
+                if processed_logs:
+                    store_result = store_logs_in_chromadb(logs_with_anomalies)
+                    logger.info(f"💾 Stored {len(processed_logs)} logs in ChromaDB: {store_result}")
                 
                 # Check if we need to generate a summary
                 await process_logs_and_generate_summary()
@@ -733,31 +777,32 @@ async def application_websocket_endpoint(websocket: WebSocket):
             elif isinstance(message, dict) and "log" in message:
                 # Handle single log
                 log_data = message["log"]
-                logger.info(f"📄 Received single log from application backend {app_client_id}: {str(log_data)[:100]}...")
-                print(f"\n📄 RECEIVED SINGLE LOG: {str(log_data)[:100]}...\n")
-                
                 processed_log = prepare_log_features(log_data)
-                
-                # Add to buffer
-                log_buffer.append(processed_log)
-                logger.info(f"📋 Added log to buffer. Current buffer size: {len(log_buffer)}")
-                print(f"\n📋 ADDED LOG TO BUFFER. CURRENT BUFFER SIZE: {len(log_buffer)}\n")
-                
-                # Store in ChromaDB
-                store_result = store_logs_in_chromadb([processed_log])
-                logger.info(f"💾 Stored log in ChromaDB: {store_result}")
                 
                 # Process for anomalies
                 log_with_anomaly = detect_anomalies([processed_log])
-                is_anomaly = log_with_anomaly[0].get("anomaly", 0) == -1 if log_with_anomaly else False
-                logger.info(f"🔍 Log anomaly detection result: {is_anomaly}")
                 
-                # Acknowledge receipt
-                await websocket.send_json({
-                    "type": "log_received", 
-                    "message": "Log received and processed",
-                    "is_anomaly": is_anomaly
-                })
+                # Transform to include is_anomaly flag
+                if log_with_anomaly:
+                    log_with_anomaly[0]["is_anomaly"] = log_with_anomaly[0].get("anomaly", 0) == -1
+                    log_with_anomaly[0].pop("anomaly", None)
+                
+                # Add to buffer and store
+                log_buffer.append(processed_log)
+                store_result = store_logs_in_chromadb(log_with_anomaly)
+                
+                # Convert timestamps before sending
+                response_data = {
+                    "type": "log_received",
+                    "log": log_with_anomaly[0] if log_with_anomaly else processed_log,
+                    "is_anomaly": log_with_anomaly[0]["is_anomaly"] if log_with_anomaly else False
+                }
+                
+                # Convert any timestamps in the response to ISO format
+                response_data = convert_timestamps_to_iso(response_data)
+                
+                # Send response
+                await websocket.send_json(response_data)
                 
                 # Check if we need to generate a summary
                 await process_logs_and_generate_summary()

@@ -1,5 +1,7 @@
+const { WebSocket } = require('ws');
 const APIKeyModel = require("../models/APIKey.model.js");
 const LogModel = require("../models/log.model.js");
+const { getServerPyClient } = require('../sockets/ws.controller.js');
 
 exports.getAnalytics = async (req, res) => {
   try {
@@ -12,7 +14,6 @@ exports.getAnalytics = async (req, res) => {
       });
     }
 
-    // Optional: Validate API Key from DB if needed
     const validKey = await APIKeyModel.findOne({ key: apiKey });
     if (!validKey) {
       return res.status(401).json({
@@ -42,48 +43,84 @@ exports.getAnalytics = async (req, res) => {
     }));
 
     try {
-      // Send logs to server.py for anomaly detection
-      const anomalyResponse = await fetch('http://localhost:5001/anomaly_detection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ logs }),
-      });
-
-      if (!anomalyResponse.ok) {
-        throw new Error(`Server responded with status: ${anomalyResponse.status}`);
+      // Get the WebSocket client
+      const serverPyClient = getServerPyClient();
+      
+      if (!serverPyClient || serverPyClient.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket connection to server.py is not available');
       }
 
-      const anomalyResults = await anomalyResponse.json();
-      console.log(`✅ Anomaly detection completed with ${anomalyResults.current_analysis.anomalies_detected} anomalies found.`);
+      // Create a promise that will resolve when we get the anomaly response
+      const anomalyPromise = new Promise((resolve, reject) => {
+        const messageHandler = (data) => {
+          try {
+            const message = JSON.parse(data);
+            console.log('📨 Received anomaly data:', message);
+            
+            // Check if this is an anomaly response
+            if (message.type === 'logs_received') {
+              // Remove the listener so we don't handle other messages
+              serverPyClient.removeListener('message', messageHandler);
+              resolve(message);
+            }
+          } catch (err) {
+            console.error('❌ Failed to parse anomaly response:', err);
+          }
+        };
 
-      // Return both current logs and historical context
+        // Add temporary message handler
+        serverPyClient.on('message', messageHandler);
+
+        // Set timeout for response
+        setTimeout(() => {
+          serverPyClient.removeListener('message', messageHandler);
+          reject(new Error('Anomaly detection timed out'));
+        }, 5000);
+      });
+
+      // Send logs through WebSocket
+      serverPyClient.send(JSON.stringify({ logs }));
+
+      // Wait for the anomaly response
+      const anomalyResult = await anomalyPromise;
+
+      // Merge the anomaly results with the original logs
+      const logsWithAnomalies = recentLogs.map(log => {
+        const anomalyData = anomalyResult.logs.find(
+          aLog => aLog.timestamp === log.timestamp && 
+                 aLog.ip === log.ip && 
+                 aLog.method === log.method &&
+                 aLog.url === log.url
+        );
+        return {
+          ...log.toObject(),
+          is_anomaly: anomalyData ? anomalyData.is_anomaly : false,
+          anomaly_score: anomalyData ? anomalyData.anomaly_score : null
+        };
+      });
+
+      // Return the enhanced logs with anomaly information
       res.status(200).json({
         success: true,
-        count: recentLogs.length,
-        data: recentLogs,
-        anomalyResults: {
-          current: {
-            total: anomalyResults.current_analysis.total_logs,
-            anomaliesDetected: anomalyResults.current_analysis.anomalies_detected,
-            anomalyDetails: anomalyResults.current_analysis.anomaly_details,
-            logsWithFeatures: anomalyResults.current_analysis.logs_with_features,
-          },
-          historical: {
-            totalLogsInBuffer: anomalyResults.historical_context.total_logs_in_buffer,
-            recentLogs: anomalyResults.historical_context.recent_logs,
-          },
-          predictionTime: anomalyResults.prediction_time
+        count: logsWithAnomalies.length,
+        data: logsWithAnomalies,
+        anomaly_summary: {
+          total_logs: anomalyResult.total_logs,
+          anomalies_detected: anomalyResult.anomalies_detected
         }
       });
+
     } catch (error) {
       console.error('❌ Error during anomaly detection:', error.message);
       // Still return logs even if anomaly detection failed
       res.status(200).json({
         success: true,
         count: recentLogs.length,
-        data: recentLogs,
+        data: recentLogs.map(log => ({
+          ...log.toObject(),
+          is_anomaly: false,
+          anomaly_score: null
+        })),
         anomalyError: error.message
       });
     }

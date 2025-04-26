@@ -7,6 +7,10 @@ let serverPyClient = null;
 const SERVER_PY_URL = 'ws://127.0.0.1:5001/ws/application';
 
 function setupServerPyConnection() {
+    if (serverPyClient && (serverPyClient.readyState === WebSocket.OPEN || serverPyClient.readyState === WebSocket.CONNECTING)) {
+        return; // Connection already exists or is being established
+    }
+
     serverPyClient = new WebSocket(SERVER_PY_URL);
 
     serverPyClient.on('open', () => {
@@ -33,6 +37,14 @@ function setupServerPyConnection() {
     });
 }
 
+// Initialize connection immediately
+setupServerPyConnection();
+
+// Export getter for the WebSocket client
+function getServerPyClient() {
+    return serverPyClient;
+}
+
 // Forward logs to server.py
 function forwardLogToServerPy(logData) {
     if (!serverPyClient || serverPyClient.readyState !== WebSocket.OPEN) {
@@ -55,9 +67,6 @@ function forwardLogToServerPy(logData) {
 
 function setupWebSocket(server) {
     const wss = new WebSocket.Server({ server, path: "/ws" });
-
-    // Setup connection to server.py
-    setupServerPyConnection();
 
     wss.on('connection', (ws) => {
         console.log('🌐 New WebSocket connection from client');
@@ -122,4 +131,8 @@ function setupWebSocket(server) {
     });
 }
 
-module.exports = setupWebSocket;
+module.exports = { 
+    setupWebSocket,
+    getServerPyClient,
+    forwardLogToServerPy
+};
