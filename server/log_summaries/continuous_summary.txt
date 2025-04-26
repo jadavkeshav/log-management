@@ -78,3 +78,19 @@ Status Code Distribution:
 
 --------------------------------------------------
 
+--- SUMMARY FOR 2025-04-26 22:24:11 ---
+Time Range: 2025-04-26 16:51:23.488000+00:00 to 2025-04-26 16:51:33.695000+00:00
+Total Logs: 20
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /api/books: 20
+
+Method Distribution:
+ - 0: 20
+
+Status Code Distribution:
+ - 200: 20
+
+--------------------------------------------------
+

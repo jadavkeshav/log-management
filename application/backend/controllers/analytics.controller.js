@@ -29,13 +29,64 @@ exports.getAnalytics = async (req, res) => {
       timestamp: { $gte: threeMinutesAgo }
     }).sort({ timestamp: -1 });
 
-    //TODO: RAM add ur logic here data is in rectLogs send data to server.py and get the response as well
+    // Send recent logs to server.py for anomaly detection
+    const logs = recentLogs.map(log => ({
+      ip: log.ip || "unknown",
+      timestamp: log.timestamp || new Date().toISOString(),
+      method: log.method || "GET",
+      url: log.url || "/",
+      protocol: log.protocol || "HTTP/1.1",
+      status_code: log.statusCode || 200,
+      bytes_sent: log.bytesSent || 0,
+      user_agent: log.userAgent || "unknown"
+    }));
 
-    res.status(200).json({
-      success: true,
-      count: recentLogs.length,
-      data: recentLogs
-    });
+    try {
+      // Send logs to server.py for anomaly detection
+      const anomalyResponse = await fetch('http://localhost:5001/anomaly_detection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ logs }),
+      });
+
+      if (!anomalyResponse.ok) {
+        throw new Error(`Server responded with status: ${anomalyResponse.status}`);
+      }
+
+      const anomalyResults = await anomalyResponse.json();
+      console.log(`✅ Anomaly detection completed with ${anomalyResults.current_analysis.anomalies_detected} anomalies found.`);
+
+      // Return both current logs and historical context
+      res.status(200).json({
+        success: true,
+        count: recentLogs.length,
+        data: recentLogs,
+        anomalyResults: {
+          current: {
+            total: anomalyResults.current_analysis.total_logs,
+            anomaliesDetected: anomalyResults.current_analysis.anomalies_detected,
+            anomalyDetails: anomalyResults.current_analysis.anomaly_details,
+            logsWithFeatures: anomalyResults.current_analysis.logs_with_features,
+          },
+          historical: {
+            totalLogsInBuffer: anomalyResults.historical_context.total_logs_in_buffer,
+            recentLogs: anomalyResults.historical_context.recent_logs,
+          },
+          predictionTime: anomalyResults.prediction_time
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error during anomaly detection:', error.message);
+      // Still return logs even if anomaly detection failed
+      res.status(200).json({
+        success: true,
+        count: recentLogs.length,
+        data: recentLogs,
+        anomalyError: error.message
+      });
+    }
   } catch (err) {
     console.error('❌ Error fetching analytics:', err.message);
     res.status(500).json({

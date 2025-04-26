@@ -261,6 +261,7 @@ def store_logs_in_chromadb(logs_with_anomalies):
                 "url": log["url"],
                 "method": log["method"],
                 "status_code": int(log["status_code"]),
+                "stored_at": datetime.now().isoformat(),  # Add storage timestamp
             }
             
             if "anomaly" in log:
@@ -283,16 +284,9 @@ def store_logs_in_chromadb(logs_with_anomalies):
 
 # === Clear Logs from ChromaDB ===
 def clear_logs_from_chromadb():
-    """Clear logs from ChromaDB"""
-    try:
-        chroma_client.delete_collection("logs")
-        global logs_col
-        logs_col = chroma_client.get_or_create_collection("logs")
-        logger.info("Cleared logs from ChromaDB")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to clear logs from ChromaDB: {e}")
-        return False
+    """Clear logs from ChromaDB - DISABLED to preserve historical logs"""
+    logger.info("Log clearing is disabled to preserve historical data")
+    return True
 
 # === Append Summary to File ===
 def append_summary_to_file(summary):
@@ -363,14 +357,15 @@ async def process_logs_and_generate_summary():
             success = append_summary_to_file(summary)
             logger.info(f"Summary appended to file: {success}")
             
-            # Clear logs from ChromaDB
+            # Don't clear logs from ChromaDB - we disabled this function
             clear_success = clear_logs_from_chromadb()
-            logger.info(f"ChromaDB cleared: {clear_success}")
+            logger.info(f"ChromaDB preserved: {clear_success}")
             
-            # Reset buffer
-            old_buffer_size = len(log_buffer)
-            log_buffer = []
-            logger.debug(f"Log buffer reset: {old_buffer_size} logs cleared")
+            # Don't reset buffer - keep historical logs
+            # old_buffer_size = len(log_buffer)
+            # log_buffer = []
+            # logger.debug(f"Log buffer reset: {old_buffer_size} logs cleared")
+            logger.debug(f"Keeping log buffer intact with {len(log_buffer)} logs to preserve history")
             
             # Update last summary time
             last_summary_time = current_time
@@ -476,8 +471,8 @@ async def chat(request: ChatRequest):
 async def anomaly_detection(log_batch: LogBatch):
     """Anomaly detection endpoint for real-time detection of anomalies in logs.
     
-    This endpoint accepts a batch of log entries and returns anomaly detection results.
-    It uses the Isolation Forest model to detect anomalies in the logs.
+    This endpoint accepts a batch of log entries and returns anomaly detection results
+    along with historical context.
     """
     try:
         start_time = datetime.now()
@@ -515,15 +510,26 @@ async def anomaly_detection(log_batch: LogBatch):
             global log_buffer
             log_buffer.extend(logs_with_anomalies)
             store_logs_in_chromadb(logs_with_anomalies)
+            logger.info(f"Added {len(logs_with_anomalies)} logs to buffer. Current size: {len(log_buffer)}")
+        
+        # Get historical context from log buffer
+        historical_logs = log_buffer[-100:]  # Get last 100 logs for context
         
         # Check if we need to generate a summary (asynchronously)
         asyncio.create_task(process_logs_and_generate_summary())
         
-        # Prepare response
+        # Prepare response with both current and historical logs
         response = {
-            "total_logs": len(logs_with_anomalies),
-            "anomalies_detected": anomaly_count,
-            "anomaly_details": anomaly_details,
+            "current_analysis": {
+                "total_logs": len(logs_with_anomalies),
+                "anomalies_detected": anomaly_count,
+                "anomaly_details": anomaly_details,
+                "logs_with_features": logs_with_anomalies,
+            },
+            "historical_context": {
+                "total_logs_in_buffer": len(log_buffer),
+                "recent_logs": historical_logs,
+            },
             "prediction_time": (datetime.now() - start_time).total_seconds()
         }
         
@@ -534,6 +540,63 @@ async def anomaly_detection(log_batch: LogBatch):
         return JSONResponse(
             status_code=500,
             content={"message": f"Error: {str(e)}"}
+        )
+
+@app.get("/logs")
+async def get_logs(limit: int = 100, anomaly_only: bool = False, query: str = None):
+    """Retrieve logs from ChromaDB with optional filtering
+    
+    This endpoint provides access to historical log data stored in ChromaDB.
+    Parameters:
+    - limit: Maximum number of logs to retrieve (default 100)
+    - anomaly_only: If true, returns only anomalous logs (default false)
+    - query: Optional search query to filter logs
+    """
+    try:
+        # Prepare query parameters
+        where_filter = {}
+        if anomaly_only:
+            where_filter["anomaly_label"] = -1
+        
+        # Query ChromaDB
+        results = logs_col.query(
+            query_texts=query if query else None,
+            n_results=limit,
+            where=where_filter if where_filter else None
+        )
+        
+        # Parse results
+        logs = []
+        
+        if results['documents'] and len(results['documents'][0]) > 0:
+            for i in range(len(results['documents'][0])):
+                try:
+                    # Extract the log from the document string
+                    log_str = results['documents'][0][i]
+                    log_data = eval(log_str)  # Convert string representation back to dict
+                    
+                    # Add metadata
+                    if results['metadatas'] and len(results['metadatas'][0]) > i:
+                        metadata = results['metadatas'][0][i]
+                        log_data['stored_at'] = metadata.get('stored_at')
+                    
+                    logs.append(log_data)
+                except Exception as e:
+                    logger.error(f"Error parsing log result {i}: {e}")
+        
+        # Sort by timestamp (newest first)
+        logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        return {
+            "total": len(logs),
+            "logs": logs
+        }
+    
+    except Exception as e:
+        logger.error(f"Error retrieving logs: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"message": f"Error retrieving logs: {str(e)}"}
         )
 
 # === WebSocket Routes ===
