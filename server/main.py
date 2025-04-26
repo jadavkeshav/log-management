@@ -846,4 +846,4 @@ async def background_processing():
 # === Main Function ===
 if __name__ == "__main__":
     print("runnig")
-    uvicorn.run("server:app", host="0.0.0.0", port=SERVER_PORT, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=SERVER_PORT, reload=True)
