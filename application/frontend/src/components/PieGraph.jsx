@@ -17,8 +17,8 @@ function PieGraph({ data }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center mb-4">
-        <LucidePieChart className="h-6 w-6 text-blue-500" />
-        <h3 className="ml-2 text-lg font-medium">HTTP Methods Distribution</h3>
+        <LucidePieChart className="h-6 w-6 text-blue-500" style={{ "color": "black" }} />
+        <h3 className="ml-2 text-lg font-medium text-black" style={{ "color": "black" }}>HTTP Methods Distribution</h3>
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
