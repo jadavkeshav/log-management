@@ -1,0 +1,17 @@
+fastapi==0.115.7
+fastapi-cli==0.0.7
+faster-whisper==1.1.1
+fastjsonschema==2.20.0
+groq==0.22.0
+scikit-image==0.24.0
+scikit-learn==1.2.2
+pydantic==2.10.6
+pydantic-extra-types==2.10.3
+pydantic-settings==2.8.1
+pydantic_core==2.27.2
+pandas==2.2.3
+numpy==1.26.4
+chroma-hnswlib==0.7.6
+chromadb==0.6.2
+uvicorn==0.34.0
+dotenv==0.9.9
