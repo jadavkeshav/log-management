@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
-function RouteAnalysis({ routes }) {
+function RouteAnalysis({ data }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center mb-4">
@@ -13,24 +13,26 @@ function RouteAnalysis({ routes }) {
           <thead>
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Response Time</th>
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Response Time</th> */}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {routes.map((route, index) => (
+            {data.map((route, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{route.path}</td>
+                {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{route.path}</td> */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    route.method === 'GET' ? 'bg-green-100 text-green-800' :
-                    route.method === 'POST' ? 'bg-blue-100 text-blue-800' :
+                  {/* <span className={`px-2 py-1 rounded-full text-xs ${
+                    route._id === '/' ? 'bg-green-100 text-green-800' :
+                    route._id === '/post' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'
-                  }`}>
-                    {route.method}
+                  }`}> */}
+                  <span className="px-2 py-1 rounded-full text-md">
+                    {route._id}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.avgResponseTime}ms</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.count}</td>
               </tr>
             ))}
           </tbody>

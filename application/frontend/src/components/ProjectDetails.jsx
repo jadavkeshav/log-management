@@ -138,12 +138,15 @@ function ProjectDetails({ project, onBack }) {
           )}
         </button>
       </div>
-      <h2 style={{"font-size": "20px"}}><b>Yearly Logs</b></h2>
+      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Yearly Logs</b></h2>
       <TrafficChart data={yearlyData} />
-      <h2 style={{"font-size": "20px"}}><b>Monthly Logs</b></h2>
-      <TrafficChart data={monthlyData} />
-      <h2 style={{"font-size": "20px"}}><b>Methods</b></h2>
+      {/* <h2 style={{ "font-size": "20px", "color": "black" }}><b>Monthly Logs</b></h2>
+      <TrafficChart data={monthlyData} /> */}
+      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Methods</b></h2>
       <PieGraph data={methods} />
+
+      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Top Endpoints</b></h2>
+      <RouteAnalysis data={endpoints} />
       {/* <StatsOverview stats={project.stats} />
       <RouteAnalysis routes={project.routes} />
       <TrafficChart data={project.trafficData} />
