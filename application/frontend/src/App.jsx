@@ -392,9 +392,9 @@ function App() {
                         {projects &&
                           projects?.map((project) => (
                             <ProjectCard
-                              key={project._id}
-                              project={project}
-                              onClick={setSelectedProject}
+                            key={project._id}
+                            project={project}
+                            onClick={setSelectedProject}
                             />
                           ))}
                       </div>

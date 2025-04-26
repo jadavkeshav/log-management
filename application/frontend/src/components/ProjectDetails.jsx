@@ -1,13 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
+import { createContext } from "react";
 import { GitBranch, ClipboardCopy, Check } from 'lucide-react';
 import StatsOverview from './StatsOverview';
 import RouteAnalysis from './RouteAnalysis';
 import TrafficChart from './TrafficChart';
 import RecentLogs from './RecentLogs';
+import {
+  lookInSession,
+  removeFromSession,
+  storeIsSession,
+} from "../utils/session";
 
+const UserContext = createContext({});
 function ProjectDetails({ project, onBack }) {
   const [copied, setCopied] = useState(false);
-
+  // const { userAuth } = useContext(UserContext);
+  const [userAuth, setUserAuth] = useState({});
+    // let userInSession = lookInSession("user");
+  
+    // userInSession
+    //   ? setUserAuth(JSON.parse(userInSession))
+    //   : setUserAuth({ token: null });
+  const [yearlyData, setYearlyData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [endpoints, setEndpoints] = useState([]);
+  const [statusCodes, setStatusCodes] = useState([]);
+  const [methods, setMethods] = useState([]);
+  useEffect(() => { 
+    const fetchData = () => {
+      const token = JSON.parse(sessionStorage.getItem("user")).token || null;
+      if (!token) return;
+      axios
+        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-yearly-logs-overview", {
+          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
+        })
+        .then((response) => {
+          console.log("Log data fetched successfully:", response.data.data);
+          setYearlyData(response.data.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching log data:", error);
+        });
+        axios
+        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-monthly-logs-overview", {
+          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
+        })
+        .then((response) => {
+          console.log("Log data fetched successfully:", response.data.data);
+          setMonthlyData(response.data.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching log data:", error);
+        });
+        axios
+        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-top-endpoints", {
+          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
+        })
+        .then((response) => {
+          console.log("End points fetched successfully:", response.data.data);
+          setEndpoints(response.data.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching log data:", error);
+        });
+        axios
+        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-status-code-distribution", {
+          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
+        })
+        .then((response) => {
+          console.log("Status codes fetched successfully:", response.data.data);
+          setStatusCodes(response.data.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching log data:", error);
+        });
+        axios
+        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-method-distribution", {
+          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
+        })
+        .then((response) => {
+          console.log("Methods fetched successfully:", response.data.data);
+          setMethods(response.data.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching log data:", error);
+        });
+    };
+    fetchData();
+  }, []);
   const handleCopy = () => {
     navigator.clipboard.writeText(project.apiKey);
     setCopied(true);
@@ -56,7 +137,10 @@ function ProjectDetails({ project, onBack }) {
           )}
         </button>
       </div>
-
+      <h2 style={{"font-size": "20px"}}><b>Yearly Logs</b></h2>
+      <TrafficChart data={yearlyData} />
+      <h2 style={{"font-size": "20px"}}><b>Monthly Logs</b></h2>
+      <TrafficChart data={monthlyData} />
       {/* <StatsOverview stats={project.stats} />
       <RouteAnalysis routes={project.routes} />
       <TrafficChart data={project.trafficData} />
