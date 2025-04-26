@@ -148,7 +148,7 @@ import {
   removeFromSession,
   storeIsSession,
 } from "./utils/session";
-import MiddlewareDocs from "./components/MiddleWareDocs";
+import MiddlewareDocs from "./components/MiddlewareDocs";
 import HomePage from "./components/HomePage";
 import GettingStartedPage from "./components/GettingStartedPage";
 // Dummy data
