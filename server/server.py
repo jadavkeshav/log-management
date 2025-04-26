@@ -18,6 +18,12 @@ from groq import Groq
 import uvicorn
 import logging
 from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+API_KEY=os.getenv('API_KEY')
 
 def convert_timestamps_to_iso(obj):
     """Recursively convert MongoDB Timestamp objects to ISO format strings"""
@@ -51,7 +57,7 @@ app.add_middleware(
 )
 
 # === Environment Variables ===
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY",API_KEY)
 SUMMARY_INTERVAL_MINUTES = 3
 SUMMARY_FILE_PATH = os.path.join(os.path.dirname(__file__), "log_summaries", "continuous_summary.txt")
 SERVER_PORT = 5001  # Changed from 5000 to 5001
