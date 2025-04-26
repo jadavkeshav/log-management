@@ -3,7 +3,7 @@ const mongoose = require("mongoose")
 const cors = require("cors")
 const dotenv = require("dotenv")
 const http = require("http")
-const setupWebSocket = require("./sockets/ws.controller")
+const { setupWebSocket } = require("./sockets/ws.controller")
 
 dotenv.config()
 
