@@ -1,13 +1,20 @@
-const express = require("express")
-const { addAnalytics, getAnalytics, getAnalyticsSummary } = require("../controllers/analytics.controller")
+const express = require('express');
+const analyticsController = require('../controllers/analytics.controller');
 const { protect } = require("../middleware/auth.middleware")
-const { validateApiKey } = require("../middleware/apikey.middleware")
 
-const router = express.Router()
+const router = express.Router();
+router.use(protect)
 
-router.post("/", validateApiKey, addAnalytics)
+router.get('/', analyticsController.getAnalytics);
 
-router.get("/:workspaceId", protect, getAnalytics)
-router.get("/:workspaceId/summary", protect, getAnalyticsSummary)
+router.get("/get-yearly-logs-overview", analyticsController.getYearlyLogs);
 
-module.exports = router
+router.get("/get-monthly-logs-overview", analyticsController.getMonthlyLogs);
+
+router.get('/get-top-endpoints', analyticsController.getTopEndpoints);
+
+router.get('/get-status-code-distribution', analyticsController.getStatusCodeDistribution);
+
+router.get('/get-method-distribution', analyticsController.getMethodDistribution);
+
+module.exports = router;

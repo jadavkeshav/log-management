@@ -1,140 +1,217 @@
-const Analytics = require("../models/Analytics.model")
-const Workspace = require("../models/Workspace.model")
-const mongoose = require("mongoose")
+const APIKeyModel = require("../models/APIKey.model.js");
+const LogModel = require("../models/log.model.js");
 
-exports.addAnalytics = async (req, res, next) => {
+exports.getAnalytics = async (req, res) => {
   try {
-    const { type, payload, source } = req.body
-    const workspaceId = req.workspace
+    const apiKey = req.headers['x-ford'];
 
-    const analytics = await Analytics.create({
-      workspace: workspaceId,
-      type,
-      payload,
-      source,
-      timestamp: new Date(),
-    })
-
-    res.status(201).json({
-      success: true,
-      data: analytics,
-    })
-  } catch (error) {
-    next(error)
-  }
-}
-
-exports.getAnalytics = async (req, res, next) => {
-  try {
-    const { workspaceId } = req.params
-
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      user: req.user._id,
-    })
-
-    if (!workspace) {
-      return res.status(404).json({
+    if (!apiKey) {
+      return res.status(400).json({
         success: false,
-        message: "Workspace not found or not authorized",
-      })
+        message: 'API Key missing in x-ford header'
+      });
     }
 
-    const { type, startDate, endDate, limit = 100, page = 1 } = req.query
-
-    const query = { workspace: workspaceId }
-
-    if (type) {
-      query.type = type
+    // Optional: Validate API Key from DB if needed
+    const validKey = await APIKeyModel.findOne({ key: apiKey });
+    if (!validKey) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid API Key'
+      });
     }
 
-    if (startDate || endDate) {
-      query.timestamp = {}
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
 
-      if (startDate) {
-        query.timestamp.$gte = new Date(startDate)
-      }
+    // Fetch logs only for this API key within the last 3 minutes
+    const recentLogs = await LogModel.find({
+      apiKey: apiKey,
+      timestamp: { $gte: threeMinutesAgo }
+    }).sort({ timestamp: -1 });
 
-      if (endDate) {
-        query.timestamp.$lte = new Date(endDate)
-      }
-    }
-
-    // Pagination
-    const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit)
-
-    // Get analytics
-    const analytics = await Analytics.find(query).sort({ timestamp: -1 }).skip(skip).limit(Number.parseInt(limit))
-
-    // Get total count
-    const total = await Analytics.countDocuments(query)
+    //TODO: RAM add ur logic here data is in rectLogs send data to server.py and get the response as well
 
     res.status(200).json({
       success: true,
-      count: analytics.length,
-      total,
-      pagination: {
-        page: Number.parseInt(page),
-        limit: Number.parseInt(limit),
-        totalPages: Math.ceil(total / Number.parseInt(limit)),
-      },
-      data: analytics,
-    })
-  } catch (error) {
-    next(error)
+      count: recentLogs.length,
+      data: recentLogs
+    });
+  } catch (err) {
+    console.error('❌ Error fetching analytics:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
   }
-}
+};
 
-exports.getAnalyticsSummary = async (req, res, next) => {
+
+exports.getYearlyLogs = async (req, res) => {
+  let apiKey = req.headers['x-ford'];
   try {
-    const { workspaceId } = req.params
-
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      user: req.user._id,
-    })
-
-    if (!workspace) {
-      return res.status(404).json({
-        success: false,
-        message: "Workspace not found or not authorized",
-      })
-    }
-
-    const typeCount = await Analytics.aggregate([
-      { $match: { workspace: mongoose.Types.ObjectId(workspaceId) } },
-      { $group: { _id: "$type", count: { $sum: 1 } } },
-    ])
-
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-    const dailyCount = await Analytics.aggregate([
+    const logsPerMonth = await LogModel.aggregate([
       {
         $match: {
-          workspace: mongoose.Types.ObjectId(workspaceId),
-          timestamp: { $gte: thirtyDaysAgo },
-        },
+          apiKey: apiKey,
+        }
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$timestamp" },
+            year: { $year: "$timestamp" },
+            month: { $month: "$timestamp" }
           },
-          count: { $sum: 1 },
-        },
+          totalLogs: { $sum: 1 }
+        }
       },
-      { $sort: { _id: 1 } },
-    ])
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1
+        }
+      }
+    ]);
+
+    const formattedData = logsPerMonth.map(item => ({
+      year: item._id.year,
+      month: item._id.month,
+      totalLogs: item.totalLogs
+    }));
 
     res.status(200).json({
       success: true,
-      data: {
-        byType: typeCount,
-        byDay: dailyCount,
-      },
-    })
+      data: formattedData
+    });
+
   } catch (error) {
-    next(error)
+    console.error('❌ Error fetching total logs:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
   }
-}
+};
+
+exports.getMonthlyLogs = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const logsByMethod = await LogModel.aggregate([
+      {
+        $match: {
+          timestamp: {
+            $gte: startOfMonth,
+            $lt: endOfMonth
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$method",
+          totalLogs: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalLogs: -1 }
+      }
+    ]);
+
+    const formattedData = logsByMethod.map(item => ({
+      method: item._id,
+      totalLogs: item.totalLogs
+    }));
+
+    res.status(200).json({
+      success: true,
+      month: now.getMonth() + 1, // (month is 0-indexed)
+      year: now.getFullYear(),
+      data: formattedData
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching current month logs:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
+  }
+};
+
+
+exports.getTopEndpoints = async (req, res) => {
+  try {
+      const apiKey = req.headers['x-ford'];
+      if (!apiKey) {
+          return res.status(400).json({ success: false, message: "API Key missing" });
+      }
+
+      const endpoints = await LogModel.aggregate([
+          { $match: { apiKey } },
+          {
+              $group: {
+                  _id: "$url",
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { count: -1 } },
+          { $limit: 10 }
+      ]);
+
+      res.status(200).json({ success: true, data: endpoints });
+  } catch (error) {
+      console.error('❌ getTopEndpoints error:', error.message);
+      res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+exports.getStatusCodeDistribution = async (req, res) => {
+  try {
+      const apiKey = req.headers['x-ford'];
+      if (!apiKey) {
+          return res.status(400).json({ success: false, message: "API Key missing" });
+      }
+
+      const statusDistribution = await LogModel.aggregate([
+          { $match: { apiKey } },
+          {
+              $group: {
+                  _id: "$statusCode",
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { count: -1 } }
+      ]);
+
+      res.status(200).json({ success: true, data: statusDistribution });
+  } catch (error) {
+      console.error('❌ getStatusCodeDistribution error:', error.message);
+      res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+exports.getMethodDistribution = async (req, res) => {
+  try {
+      const apiKey = req.headers['x-ford'];
+      if (!apiKey) {
+          return res.status(400).json({ success: false, message: "API Key missing" });
+      }
+
+      const methodDistribution = await LogModel.aggregate([
+          { $match: { apiKey } },
+          {
+              $group: {
+                  _id: "$method",
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { count: -1 } }
+      ]);
+
+      res.status(200).json({ success: true, data: methodDistribution });
+  } catch (error) {
+      console.error('❌ getMethodDistribution error:', error.message);
+      res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
