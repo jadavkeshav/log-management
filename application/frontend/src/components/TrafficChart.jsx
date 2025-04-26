@@ -65,8 +65,8 @@ function TrafficChart({ data }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center mb-4">
-        <BarChart3 className="h-6 w-6 text-blue-500" />
-        <h3 className="ml-2 text-lg font-medium">Yearly Log Distribution (2025)</h3>
+        <BarChart3 className="h-6 w-6 text-blue-500 text-black" style={{ "color": "black" }}/>
+        <h3 className="ml-2 text-lg font-medium" style={{ "color": "black" }}>Yearly Log Distribution (2025)</h3>
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">

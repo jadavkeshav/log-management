@@ -28,6 +28,7 @@ function ProjectDetails({ project, onBack }) {
   const [endpoints, setEndpoints] = useState([]);
   const [statusCodes, setStatusCodes] = useState([]);
   const [methods, setMethods] = useState([]);
+  const [stats, setStats] = useState({ "realtimeLogs": 25, "anomalies": 15, "dbLogs": 5 })
   useEffect(() => { 
     const fetchData = () => {
       const token = JSON.parse(sessionStorage.getItem("user")).token || null;
@@ -138,6 +139,7 @@ function ProjectDetails({ project, onBack }) {
           )}
         </button>
       </div>
+      <StatsOverview stats={stats} />
       <h2 style={{ "font-size": "20px", "color": "black" }}><b>Yearly Logs</b></h2>
       <TrafficChart data={yearlyData} />
       {/* <h2 style={{ "font-size": "20px", "color": "black" }}><b>Monthly Logs</b></h2>
