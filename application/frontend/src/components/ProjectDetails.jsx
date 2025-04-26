@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { createContext } from "react";
-import { GitBranch, ClipboardCopy, Check } from 'lucide-react';
+import { GitBranch, ClipboardCopy, Check, PieChart } from 'lucide-react';
 import StatsOverview from './StatsOverview';
 import RouteAnalysis from './RouteAnalysis';
 import TrafficChart from './TrafficChart';
+import PieGraph from './PieGraph';
 import RecentLogs from './RecentLogs';
 import {
   lookInSession,
@@ -141,6 +142,8 @@ function ProjectDetails({ project, onBack }) {
       <TrafficChart data={yearlyData} />
       <h2 style={{"font-size": "20px"}}><b>Monthly Logs</b></h2>
       <TrafficChart data={monthlyData} />
+      <h2 style={{"font-size": "20px"}}><b>Methods</b></h2>
+      <PieGraph data={methods} />
       {/* <StatsOverview stats={project.stats} />
       <RouteAnalysis routes={project.routes} />
       <TrafficChart data={project.trafficData} />
