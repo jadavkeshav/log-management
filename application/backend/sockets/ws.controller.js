@@ -4,7 +4,7 @@ const LogModel = require('../models/log.model');
 
 // Setup WebSocket client for connecting to server.py
 let serverPyClient = null;
-const SERVER_PY_URL = 'ws://127.0.0.1:5001/ws/application';
+const SERVER_PY_URL = process.env.GROQ_SERVER_WS;
 
 function setupServerPyConnection() {
     if (serverPyClient && (serverPyClient.readyState === WebSocket.OPEN || serverPyClient.readyState === WebSocket.CONNECTING)) {
