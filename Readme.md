@@ -106,7 +106,7 @@ npm run dev
 ```
 
 
-### Running the Frontend
+### Running the Backend
 
 1. Navigate to backend directory
 ```bash
