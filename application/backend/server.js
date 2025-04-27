@@ -33,6 +33,10 @@ app.use((err, req, res, next) => {
   })
 })
 
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to the API" })
+});
+
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {

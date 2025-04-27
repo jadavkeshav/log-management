@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 const requestIp = require('request-ip');
 
-const WS_SERVER_URL = 'ws://localhost:5000/ws';
+const WS_SERVER_URL = 'wss://logger-backend-4trf.onrender.com/ws';
 
 function createLoggerMiddleware({apiKey}) {
     if (!apiKey) {
