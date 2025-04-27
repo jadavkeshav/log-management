@@ -4,6 +4,7 @@ import { LogIn, Mail, Lock } from "lucide-react";
 import { UserContext } from "../App";
 import { storeIsSession } from "../utils/session";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 function Login() {
 	let { userAuth, setUserAuth } = useContext(UserContext);
@@ -25,11 +26,14 @@ function Login() {
 			.then(({ data }) => {
 				storeIsSession("user", JSON.stringify(data));
 				setUserAuth(data);
+				toast.success("Login successful!");
+				navigate("/dashboard");
 			})
 			.catch((response) => {
 				console.error(response);
+				toast.error(response.response.data.message);
+				navigate("/dashboard");
 			});
-		navigate("/dashboard");
 	};
 
 	return (

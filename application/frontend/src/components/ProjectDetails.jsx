@@ -12,6 +12,7 @@ import {
   removeFromSession,
   storeIsSession,
 } from "../utils/session";
+import toast from 'react-hot-toast';
 
 const UserContext = createContext({});
 function ProjectDetails({ project, onBack }) {
@@ -94,6 +95,7 @@ function ProjectDetails({ project, onBack }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(project.apiKey);
     setCopied(true);
+    toast.success("API Key copied to clipboard!");
     setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
   };
 
