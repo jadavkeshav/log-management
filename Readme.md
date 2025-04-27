@@ -168,6 +168,6 @@ We are a team of passionate developers and data enthusiasts dedicated to buildin
 - ![Keshav Jadav](https://github.com/jadavkeshav.png?size=50) **[Keshav Jadav](https://github.com/jadavkeshav)**
 - ![RamaChandra Bharadwaj](https://github.com/RamachandraBharadwaj.png?size=50) **[RamaChandra Bharadwaj](https://github.com/RamachandraBharadwaj)**
 - ![Pardiv Kamishetty](https://github.com/pardivkamishetty.png?size=50) **[Pardiv Kamishetty](https://github.com/pardivkamishetty)**
-- ![Kushal Bharadwaj](https://github.com/kushalbharadwaj18.png?size=50) **[Kushal Bharadwaj](https://github.com/kushalbharadwaj18)**
+- ![Kushal Bharadwaj](https://github.com/kushalbharadwaj18.png?size=20) **[Kushal Bharadwaj](https://github.com/kushalbharadwaj18)**
 
 Feel free to reach out to us for any questions or collaboration opportunities!
