@@ -72,6 +72,7 @@ This repository contains a Log Management and Anomaly Detection system designed 
             "url": "/api/v1/data",
             "status_code": 200,
             "anomaly_score": 0.85
+            "isanamoly":True
          }
       ],
       "prediction_time": "0.02"
@@ -148,9 +149,6 @@ cd server
 ```bash
 uvicorn server:app --reload
 ```
-
-    This will start the FastAPI application, and the server will be available at `http://127.0.0.0.1`
-
 
 
 ## Real-time Monitoring with WebSockets
