@@ -149,7 +149,7 @@ cd server
 uvicorn server:app --reload
 ```
 
-    This will start the FastAPI application, and the server will be available at `http://127.0.0.0.1:`.
+    This will start the FastAPI application, and the server will be available at `http://127.0.0.0.1`
 
 
 
