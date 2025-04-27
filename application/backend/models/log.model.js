@@ -8,7 +8,7 @@ const logSchema = new mongoose.Schema({
     url: { type: String, required: true },
     protocol: { type: String, required: true },
     statusCode: { type: Number, required: true },
-    bytesSent: { type: String, required: true },
+    bytesSent: { type: Number, required: true },
     userAgent: { type: String, required: true },
     url_length: { type: Number, required: true },
     url_depth: { type: Number, required: true },

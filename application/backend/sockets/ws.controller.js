@@ -2,68 +2,8 @@ const WebSocket = require('ws');
 const ApiKeyModel = require('../models/APIKey.model');
 const LogModel = require('../models/log.model');
 
-// Setup WebSocket client for connecting to server.py
-let serverPyClient = null;
-const SERVER_PY_URL = process.env.GROQ_SERVER_WS;
-
-function setupServerPyConnection() {
-    if (serverPyClient && (serverPyClient.readyState === WebSocket.OPEN || serverPyClient.readyState === WebSocket.CONNECTING)) {
-        return; // Connection already exists or is being established
-    }
-
-    serverPyClient = new WebSocket(SERVER_PY_URL);
-
-    serverPyClient.on('open', () => {
-        console.log('🔗 Connected to server.py analysis backend');
-    });
-
-    serverPyClient.on('message', (data) => {
-        try {
-            const message = JSON.parse(data);
-            console.log('📨 Received from server.py:', message);
-        } catch (err) {
-            console.error('❌ Failed to parse message from server.py:', err);
-        }
-    });
-
-    serverPyClient.on('error', (err) => {
-        console.error('❌ server.py connection error:', err);
-        setTimeout(setupServerPyConnection, 5000); // Try to reconnect
-    });
-
-    serverPyClient.on('close', () => {
-        console.log('🔌 server.py connection closed, attempting to reconnect...');
-        setTimeout(setupServerPyConnection, 5000);
-    });
-}
-
-// Initialize connection immediately
-setupServerPyConnection();
-
-// Export getter for the WebSocket client
-function getServerPyClient() {
-    return serverPyClient;
-}
-
-// Forward logs to server.py
-function forwardLogToServerPy(logData) {
-    if (!serverPyClient || serverPyClient.readyState !== WebSocket.OPEN) {
-        console.log('⚠️ Cannot forward log to server.py: connection not open');
-        setTimeout(() => forwardLogToServerPy(logData), 1000); // Retry after 1 second
-        return false;
-    }
-
-    try {
-        serverPyClient.send(JSON.stringify({
-            log: logData
-        }));
-        console.log('📤 Forwarded log to server.py');
-        return true;
-    } catch (err) {
-        console.error('❌ Failed to forward log to server.py:', err.message);
-        return false;
-    }
-}
+// Store connected clients with their API keys
+const connectedClients = new Map();
 
 function setupWebSocket(server) {
     const wss = new WebSocket.Server({ server, path: "/ws" });
@@ -88,51 +28,70 @@ function setupWebSocket(server) {
 
                     ws.apiKey = data.apiKey;
                     isAuthenticated = true;
-                    console.log('🔐 Client authenticated');
+                    connectedClients.set(ws, data.apiKey);
+                    console.log('🔐 Client authenticated with API key:', data.apiKey);
+                    
+                    // Send last 100 logs immediately after authentication
+                    const recentLogs = await LogModel.find({ apiKey: data.apiKey })
+                        .sort({ timestamp: -1 })
+                        .limit(100)
+                        .lean()
+                        .exec();
+                    
+                    // Ensure bytesSent is a number
+                    const processedLogs = recentLogs.map(log => ({
+                        ...log,
+                        bytesSent: parseInt(log.bytesSent) || 0
+                    }));
+                    
+                    ws.send(JSON.stringify({
+                        type: 'initial_logs',
+                        logs: processedLogs
+                    }));
+                    
                     return;
                 }
 
-                if (data.type === 'log') {
-                    if (!isAuthenticated) {
-                        ws.send(JSON.stringify({ type: 'error', message: 'Unauthenticated. No logs accepted.' }));
-                        ws.close();
-                        return;
-                    }
-                    console.log('📥 Received log from client:', JSON.stringify(data.log).substring(0, 200) + '...');
-
-                    // Store in MongoDB and forward to server.py
-                    try {
-                        let logdata = {
-                            apiKey: data.apiKey,
-                            ...data.log,
-                        };
-                        
-                        // Save to MongoDB
-                        const newLog = new LogModel(logdata);
-                        await newLog.save();
-                        console.log('✅ Log saved to MongoDB');
-
-                        // Forward to server.py for analysis
-                        forwardLogToServerPy(logdata);
-
-                    } catch (err) {
-                        console.error('⚠️ Error processing log:', err.message);
-                    }
+                if (!isAuthenticated) {
+                    ws.send(JSON.stringify({ type: 'error', message: 'Not authenticated' }));
+                    return;
                 }
             } catch (err) {
-                console.error('⚠️ Failed to process message:', err.message);
-                ws.send(JSON.stringify({ type: 'error', message: 'Malformed request' }));
+                console.error('❌ Error processing message:', err);
             }
         });
 
         ws.on('close', () => {
-            console.log('🔌 WebSocket connection from client closed');
+            console.log('🔌 Client disconnected');
+            connectedClients.delete(ws);
         });
+
+        ws.on('error', (error) => {
+            console.error('❌ WebSocket error:', error);
+            connectedClients.delete(ws);
+        });
+    });
+}
+
+// Broadcast log to relevant clients
+function broadcastLog(log) {
+    // Ensure bytesSent is a number before broadcasting
+    const processedLog = {
+        ...log,
+        bytesSent: parseInt(log.bytesSent) || 0
+    };
+
+    connectedClients.forEach((apiKey, ws) => {
+        if (ws.readyState === WebSocket.OPEN && apiKey === log.apiKey) {
+            ws.send(JSON.stringify({
+                type: 'log',
+                log: processedLog
+            }));
+        }
     });
 }
 
 module.exports = { 
     setupWebSocket,
-    getServerPyClient,
-    forwardLogToServerPy
+    broadcastLog
 };

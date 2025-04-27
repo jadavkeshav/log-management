@@ -60,7 +60,7 @@ app.add_middleware(
 GROQ_API_KEY = os.getenv("GROQ_API_KEY",API_KEY)
 SUMMARY_INTERVAL_MINUTES = 3
 SUMMARY_FILE_PATH = os.path.join(os.path.dirname(__file__), "log_summaries", "continuous_summary.txt")
-SERVER_PORT = int(os.getenv("PORT", 5000))
+SERVER_PORT = 5050
   # Changed from 5000 to 5001
 APPLICATION_BACKEND_URL = "http://localhost:5000"  # Application backend URL
 
