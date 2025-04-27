@@ -24,7 +24,7 @@ function Navigation({ onNewProject, isAuthenticated, onLogout }) {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Activity className="h-8 w-8 text-blue-500" />
-            <span className="ml-2 text-xl font-semibold">Log Analysis Dashboard</span>
+            <span className="ml-2 text-xl font-semibold">LoggerMon</span>
           </div>
           <div className="flex items-center space-x-4">
           <div>

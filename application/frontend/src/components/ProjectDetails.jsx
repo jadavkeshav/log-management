@@ -12,6 +12,8 @@ import {
   storeIsSession,
 } from "../utils/session";
 import toast from 'react-hot-toast';
+import PieGraph from './PieGraph';
+import { data } from 'react-router-dom';
 
 function ProjectDetails({ project, onBack }) {
   const [copied, setCopied] = useState(false);
@@ -27,7 +29,7 @@ function ProjectDetails({ project, onBack }) {
     anomalyPercentage: 0,
     totalRequests: 0
   });
-
+  const [data, setData] = useState({});
   const handleNewLog = useCallback((log) => {
     setLiveLogs(prev => {
       const newLogs = [...prev, log].slice(-100); // Keep last 100 logs
@@ -87,6 +89,11 @@ function ProjectDetails({ project, onBack }) {
       axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-method-distribution", { headers })
         .then(response => setMethods(response.data.data))
         .catch(error => console.error("Error fetching methods:", error));
+
+        axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/", { headers })
+        .then(response => setData(response.data.data))
+        .catch(error => console.error("Error fetching methods:", error));
+
     };
 
     fetchData();
@@ -140,7 +147,7 @@ function ProjectDetails({ project, onBack }) {
       socket.close();
     };
   }, [project.apiKey, handleNewLog]);
-
+  console.log(statusCodes);
   const handleCopy = () => {
     navigator.clipboard.writeText(project.apiKey);
     setCopied(true);
@@ -190,10 +197,7 @@ function ProjectDetails({ project, onBack }) {
       </div>
 
       <LogMetrics
-        avgBytes={metrics.avgBytes}
-        maxBytes={metrics.maxBytes}
-        anomalyPercentage={metrics.anomalyPercentage}
-        totalRequests={metrics.totalRequests}
+        data={data}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -208,8 +212,13 @@ function ProjectDetails({ project, onBack }) {
       </div>
 
       <div>
+      <h2 className="text-xl font-semibold mb-4">HTTP Method Distribution</h2>
+      <PieGraph data={methods} />
+      </div>
+
+      <div>
         <h2 className="text-xl font-semibold mb-4">Live Log Stream</h2>
-        <LiveLogStream logs={liveLogs} />
+        <LiveLogStream data={data} />
       </div>
     </div>
   );

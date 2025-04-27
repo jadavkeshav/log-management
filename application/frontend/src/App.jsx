@@ -295,7 +295,7 @@ function App() {
 
 	return (
 		<Router>
-			<div className="min-h-screen bg-gray-50" style={{ width: "100vw" }}>
+			<div className="min-h-screen bg-gray-50" style={{ width: "99vw" }}>
 				{/* <Navigation onNewProject={() => setShowNewProjectModal(true)} /> */}
 				<Navigation
 					isAuthenticated={!!lookInSession("user")}
