@@ -89,41 +89,41 @@ This repository contains a Log Management and Anomaly Detection system designed 
 ### Running the Frontend
 
 1. Navigate to frontend directory
-'''bash
+```bash
 cd frontend
-'''
+```
 
 2. Install Node modules 
 
-'''bash
+```bash
 npm i
-'''
+```
 
 3. Run the Development Server
 
-'''bash
+```bash
 npm run dev
-'''
+```
 
 
 ### Running the Frontend
 
 1. Navigate to backend directory
-'''bash
+```bash
 cd backend
-'''
+```
 
 2. Install Node modules 
 
-'''bash
+```bash
 npm i
-'''
+```
 
 3. Run the Development Server
 
-'''bash
+```bash
 npx nodemon server.js
-'''
+```
 
 
 
@@ -140,14 +140,14 @@ pip install -r requirements.txt
 
 ### Running the Server
 1. Navigate to server directory
-'''bash
+```bash
 cd server
-'''
+```
 
 2. Start the server:  
-'''bash
+```bash
 uvicorn server:app --reload
-'''
+```
 
     This will start the FastAPI application, and the server will be available at `http://127.0.0.0.1:`.
 
