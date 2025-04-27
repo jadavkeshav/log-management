@@ -73,3 +73,16 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+@keyframes highlight {
+  0% {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-highlight {
+  animation: highlight 2s ease-out;
+}

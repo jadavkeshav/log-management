@@ -148,7 +148,7 @@ import {
   removeFromSession,
   storeIsSession,
 } from "./utils/session";
-import MiddlewareDocs from "./components/MiddleWareDocs";
+import MiddlewareDocs from "./components/MiddlewareDocs";
 import HomePage from "./components/HomePage";
 import GettingStartedPage from "./components/GettingStartedPage";
 // Dummy data
@@ -216,7 +216,6 @@ const PublicRoute = ({ children }) => {
 };
 
 export const UserContext = createContext({});
-
 function App() {
   const [userAuth, setUserAuth] = useState({});
 
@@ -393,9 +392,9 @@ function App() {
                         {projects &&
                           projects?.map((project) => (
                             <ProjectCard
-                              key={project._id}
-                              project={project}
-                              onClick={setSelectedProject}
+                            key={project._id}
+                            project={project}
+                            onClick={setSelectedProject}
                             />
                           ))}
                       </div>
