@@ -135,7 +135,7 @@ function ProjectDetails({ project, onBack }) {
 
 		// WebSocket connection for live updates
 		const wsUrl = import.meta.env.VITE_BASE_URL.replace("http", "ws") + "/ws";
-		const socket = new WebSocket("ws://127.0.0.1:5000/ws");
+		const socket = new WebSocket(wsUrl);
 
 		socket.onopen = () => {
 			socket.send(

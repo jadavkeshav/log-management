@@ -646,3 +646,37 @@ Status Code Distribution:
 
 --------------------------------------------------
 
+--- SUMMARY FOR 2025-04-27 16:41:43 ---
+Time Range: 2025-04-27 10:57:03.482000+00:00 to 2025-04-27 11:10:23.146000+00:00
+Total Logs: 377
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /get/1: 361
+ - /: 16
+
+Method Distribution:
+ - 0: 377
+
+Status Code Distribution:
+ - 200: 377
+
+--------------------------------------------------
+
+--- SUMMARY FOR 2025-04-27 16:44:44 ---
+Time Range: 2025-04-27 10:57:03.482000+00:00 to 2025-04-27 11:10:23.146000+00:00
+Total Logs: 377
+Anomalies Detected: 0
+
+Top Endpoints:
+ - /get/1: 361
+ - /: 16
+
+Method Distribution:
+ - 0: 377
+
+Status Code Distribution:
+ - 200: 377
+
+--------------------------------------------------
+
