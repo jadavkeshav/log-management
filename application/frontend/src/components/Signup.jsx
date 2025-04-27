@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserPlus, Mail, Lock, User } from "lucide-react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 function Signup() {
 	const [formData, setFormData] = useState({
@@ -30,14 +31,16 @@ function Signup() {
 			})
 			.then(({ data }) => {
 				console.log(data);
+				toast.success("Signup successful!");
 				navigate("/login");
 			})
 			.catch((response) => {
 				console.error(response);
+				toast.error(response.response.data.message);
 				// Handle error (e.g., show a message to the user)
+				navigate("/login");
 			});
 		console.log("Signup:", formData);
-		navigate("/login");
 	};
 
 	return (

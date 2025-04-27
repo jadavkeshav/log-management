@@ -127,13 +127,7 @@
 // export default App;
 
 import React, { useContext, useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import ProjectCard from "./components/ProjectCard";
 import ProjectDetails from "./components/ProjectDetails";
@@ -143,14 +137,11 @@ import Signup from "./components/Signup";
 import axios from "axios";
 import { createContext } from "react";
 import Chatbot from "./components/Chatbot";
-import {
-  lookInSession,
-  removeFromSession,
-  storeIsSession,
-} from "./utils/session";
+import { logOutUser, lookInSession, removeFromSession, storeIsSession } from "./utils/session";
 import MiddlewareDocs from "./components/MiddlewareDocs";
 import HomePage from "./components/HomePage";
 import GettingStartedPage from "./components/GettingStartedPage";
+import toast, { Toaster } from "react-hot-toast";
 // Dummy data
 // const dummyProjects = [
 // 	{
@@ -206,118 +197,119 @@ import GettingStartedPage from "./components/GettingStartedPage";
 // ];
 
 const PrivateRoute = ({ children }) => {
-  const { userAuth } = useContext(UserContext);
-  return userAuth?.token ? children : <Navigate to="/" />;
+	const { userAuth } = useContext(UserContext);
+	return userAuth?.token ? children : <Navigate to="/" />;
 };
 
 const PublicRoute = ({ children }) => {
-  const { userAuth } = useContext(UserContext);
-  return userAuth?.token ? <Navigate to="/dashboard" /> : children;
+	const { userAuth } = useContext(UserContext);
+	return userAuth?.token ? <Navigate to="/dashboard" /> : children;
 };
 
 export const UserContext = createContext({});
 function App() {
-  const [userAuth, setUserAuth] = useState({});
+	const [userAuth, setUserAuth] = useState({});
 
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [newProject, setNewProject] = useState({
-    name: "",
-    description: "",
-    routes: [],
-  });
+	const [projects, setProjects] = useState([]);
+	const [selectedProject, setSelectedProject] = useState(null);
+	const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+	const [newProject, setNewProject] = useState({
+		name: "",
+		description: "",
+		routes: [],
+	});
 
-  useEffect(() => {
-    let userInSession = lookInSession("user");
+	useEffect(() => {
+		let userInSession = lookInSession("user");
 
-    userInSession
-      ? setUserAuth(JSON.parse(userInSession))
-      : setUserAuth({ token: null });
-  }, []);
+		userInSession ? setUserAuth(JSON.parse(userInSession)) : setUserAuth({ token: null });
+	}, []);
 
-  //updateProjects
-  //fetch projects from backend method
+	//updateProjects
+	//fetch projects from backend method
 
-  const fetchProjects = () => {
-    if (!userAuth?.token) return;
-    axios
-      .get(import.meta.env.VITE_BASE_URL + "/api/workspaces/", {
-        headers: { Authorization: `Bearer ${userAuth?.token}` },
-      })
-      .then((response) => {
-        console.log("Projects fetched successfully:", response.data.data);
-        setProjects(response.data.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching projects:", error);
-      });
-  };
+	const fetchProjects = () => {
+		if (!userAuth?.token) return;
+		axios
+			.get(import.meta.env.VITE_BASE_URL + "/api/workspaces/", {
+				headers: { Authorization: `Bearer ${userAuth?.token}` },
+			})
+			.then((response) => {
+				console.log("Projects fetched successfully:", response.data.data);
+				setProjects(response.data.data);
+			})
+			.catch((error) => {
+				console.error("Error fetching projects:", error);
+			});
+	};
 
-  useEffect(() => {
-    if (userAuth?.token) {
-      fetchProjects();
-    }
-  }, [userAuth?.token]);
+	useEffect(() => {
+		if (userAuth?.token) {
+			fetchProjects();
+		}
+	}, [userAuth?.token]);
 
-  useEffect(() => {
-    console.log("Projects state updated:", projects);
-  }, [projects]);
+	useEffect(() => {
+		console.log("Projects state updated:", projects);
+	}, [projects]);
 
-  const handleCreateProject = () => {
-    if (newProject.name && newProject.description) {
-      const project = {
-        id: projects.length + 1,
-        ...newProject,
-        stats: {
-          realtimeLogs: 0,
-          anomalies: 0,
-          dbLogs: 0,
-        },
-        trafficData: [],
-        recentLogs: [],
-      };
-      console.log(project);
-      axios
-        .post(
-          import.meta.env.VITE_BASE_URL + "/api/workspaces",
-          {
-            name: project.name,
-            description: project.description,
-          },
-          { headers: { Authorization: `Bearer ${userAuth.token}` } }
-        )
-        .then((response) => {
-          console.log("Project created successfully:", response.data);
-          // Handle success (e.g., update state, show success message)
-          fetchProjects();
-        })
-        .catch((error) => {
-          console.error("Error creating project:", error);
-          // Handle error (e.g., show error message)
-        });
-      setShowNewProjectModal(false);
-    }
-  };
+	const handleCreateProject = () => {
+		if (newProject.name && newProject.description) {
+			const project = {
+				id: projects.length + 1,
+				...newProject,
+				stats: {
+					realtimeLogs: 0,
+					anomalies: 0,
+					dbLogs: 0,
+				},
+				trafficData: [],
+				recentLogs: [],
+			};
+			console.log(project);
+			axios
+				.post(
+					import.meta.env.VITE_BASE_URL + "/api/workspaces",
+					{
+						name: project.name,
+						description: project.description,
+					},
+					{ headers: { Authorization: `Bearer ${userAuth.token}` } }
+				)
+				.then((response) => {
+					console.log("Project created successfully:", response.data);
+					toast.success("Project created successfully!");
+					// Handle success (e.g., update state, show success message)
+					fetchProjects();
+				})
+				.catch((error) => {
+					console.error("Error creating project:", error);
+					toast.error("Error creating project:", error.response.data.message);
+					// Handle error (e.g., show error message)
+				});
+			setShowNewProjectModal(false);
+		}
+	};
 
-  // setUserAuth(JSON.parse(lookInSession("user")));
+	// setUserAuth(JSON.parse(lookInSession("user")));
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50" style={{ width: "100vw" }}>
-        {/* <Navigation onNewProject={() => setShowNewProjectModal(true)} /> */}
-        <Navigation
-          isAuthenticated={!!lookInSession("user")}
-          onNewProject={() => setShowNewProjectModal(true)}
-          onLogout={() => {
-            setUserAuth({ token: null });
-            logOutUser();
-            // optionally trigger logout logic or context update
-          }}
-        />
+	return (
+		<Router>
+			<div className="min-h-screen bg-gray-50" style={{ width: "100vw" }}>
+				{/* <Navigation onNewProject={() => setShowNewProjectModal(true)} /> */}
+				<Navigation
+					isAuthenticated={!!lookInSession("user")}
+					onNewProject={() => setShowNewProjectModal(true)}
+					onLogout={() => {
+						setUserAuth({ token: null });
+						toast.success("Logout successful!");
+						logOutUser();
+						// optionally trigger logout logic or context update
+					}}
+				/>
 
-        <UserContext.Provider value={{ userAuth, setUserAuth }}>
-          {/* <Routes>
+				<UserContext.Provider value={{ userAuth, setUserAuth }}>
+					{/* <Routes>
 						<Route path="/" element={<Login />} />
 						<Route path="/signup" element={<Signup />} />
 						<Route
@@ -338,108 +330,75 @@ function App() {
 						/>
 						<Route path="*" element={<Navigate to="/" />} />
 					</Routes> */}
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <PublicRoute>
-                  <HomePage />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/getting-started"
-              element={
-                // <PublicRoute>
-                  <GettingStartedPage />
-                // </PublicRoute>
-              }
-            />
-            <Route
-              path="/chatbot"
-              element={
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <div className="flex justify-center items-center h-[calc(100vh-200px)]">
-                    <Chatbot projects={projects} isEmbedded={true} />
-                  </div>
-                </div>
-              }
-            />
+					<Routes>
+						<Route
+							path="/"
+							element={
+								<PublicRoute>
+									<HomePage />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/getting-started"
+							element={
+								// <PublicRoute>
+								<GettingStartedPage />
+								// </PublicRoute>
+							}
+						/>
+						<Route
+							path="/chatbot"
+							element={
+								<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+									<div className="flex justify-center items-center h-[calc(100vh-200px)]">
+										<Chatbot projects={projects} isEmbedded={true} />
+									</div>
+								</div>
+							}
+						/>
 
-            <Route
-              path="/signin"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/signup"
-              element={
-                <PublicRoute>
-                  <Signup />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {!selectedProject ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projects &&
-                          projects?.map((project) => (
-                            <ProjectCard
-                            key={project._id}
-                            project={project}
-                            onClick={setSelectedProject}
-                            />
-                          ))}
-                      </div>
-                    ) : (
-                      <ProjectDetails
-                        project={selectedProject}
-                        onBack={() => setSelectedProject(null)}
-                      />
-                    )}
-                  </main>
-                </PrivateRoute>
-              }
-            />
-            {/* Catch all: redirect based on auth */}
-            <Route
-              path="/docs"
-              element={
-                // <PublicRoute>
-                  <MiddlewareDocs />
-                // </PublicRoute>
-              }
-            />
-            <Route
-              path="*"
-              element={
-                userAuth?.token ? (
-                  <Navigate to="/dashboard" />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
-          </Routes>
-          {userAuth?.token && showNewProjectModal && (
-            <NewProjectModal
-              project={newProject}
-              onClose={() => setShowNewProjectModal(false)}
-              onCreate={handleCreateProject}
-              onChange={setNewProject}
-            />
-          )}
-        </UserContext.Provider>
-      </div>
-    </Router>
-  );
+						<Route
+							path="/signin"
+							element={
+								<PublicRoute>
+									<Login />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/signup"
+							element={
+								<PublicRoute>
+									<Signup />
+								</PublicRoute>
+							}
+						/>
+						<Route
+							path="/dashboard"
+							element={
+								<PrivateRoute>
+									<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{!selectedProject ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{projects && projects?.map((project) => <ProjectCard key={project._id} project={project} onClick={setSelectedProject} />)}</div> : <ProjectDetails project={selectedProject} onBack={() => setSelectedProject(null)} />}</main>
+								</PrivateRoute>
+							}
+						/>
+						{/* Catch all: redirect based on auth */}
+						<Route
+							path="/docs"
+							element={
+								// <PublicRoute>
+								<MiddlewareDocs />
+								// </PublicRoute>
+							}
+						/>
+						<Route path="*" element={userAuth?.token ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
+					</Routes>
+					{userAuth?.token && showNewProjectModal && <NewProjectModal project={newProject} onClose={() => setShowNewProjectModal(false)} onCreate={handleCreateProject} onChange={setNewProject} />}
+				</UserContext.Provider>
+				<Toaster position="top-center" reverseOrder={false} />
+			</div>
+		</Router>
+	);
 }
 
 export default App;
