@@ -17,4 +17,8 @@ router.get('/get-status-code-distribution', analyticsController.getStatusCodeDis
 
 router.get('/get-method-distribution', analyticsController.getMethodDistribution);
 
+router.get('/get-overview', analyticsController.overview);
+
+router.get('/get-last-three-mins-logs', analyticsController.getRecentLogs);
+
 module.exports = router;

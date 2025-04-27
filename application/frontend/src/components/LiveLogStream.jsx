@@ -3,7 +3,7 @@ import { Activity, ArrowUp, Database, AlertTriangle } from 'lucide-react';
 
 function LogStats({ data }) {
   // Extract relevant data
-  const logs = data?.data || [];
+  const logs = data || [];
   const tableData = logs.map(log => ({
     timestamp: new Date(log.timestamp).toLocaleString(),
     ip: log.ip.replace('::ffff:', ''),

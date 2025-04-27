@@ -45,7 +45,7 @@ exports.getAnalytics = async (req, res) => {
     try {
       // Get the WebSocket client
       const serverPyClient = getServerPyClient();
-      
+
       if (!serverPyClient || serverPyClient.readyState !== WebSocket.OPEN) {
         throw new Error('WebSocket connection to server.py is not available');
       }
@@ -56,7 +56,7 @@ exports.getAnalytics = async (req, res) => {
           try {
             const message = JSON.parse(data);
             console.log('📨 Received anomaly data:', message);
-            
+
             // Check if this is an anomaly response
             if (message.type === 'logs_received') {
               // Remove the listener so we don't handle other messages
@@ -87,10 +87,10 @@ exports.getAnalytics = async (req, res) => {
       // Merge the anomaly results with the original logs
       const logsWithAnomalies = recentLogs.map(log => {
         const anomalyData = anomalyResult.logs.find(
-          aLog => aLog.timestamp === log.timestamp && 
-                 aLog.ip === log.ip && 
-                 aLog.method === log.method &&
-                 aLog.url === log.url
+          aLog => aLog.timestamp === log.timestamp &&
+            aLog.ip === log.ip &&
+            aLog.method === log.method &&
+            aLog.url === log.url
         );
         return {
           ...log.toObject(),
@@ -230,76 +230,170 @@ exports.getMonthlyLogs = async (req, res) => {
 
 exports.getTopEndpoints = async (req, res) => {
   try {
-      const apiKey = req.headers['x-ford'];
-      if (!apiKey) {
-          return res.status(400).json({ success: false, message: "API Key missing" });
-      }
+    const apiKey = req.headers['x-ford'];
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: "API Key missing" });
+    }
 
-      const endpoints = await LogModel.aggregate([
-          { $match: { apiKey } },
-          {
-              $group: {
-                  _id: "$url",
-                  count: { $sum: 1 }
-              }
-          },
-          { $sort: { count: -1 } },
-          { $limit: 10 }
-      ]);
+    const endpoints = await LogModel.aggregate([
+      { $match: { apiKey } },
+      {
+        $group: {
+          _id: "$url",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
 
-      res.status(200).json({ success: true, data: endpoints });
+    res.status(200).json({ success: true, data: endpoints });
   } catch (error) {
-      console.error('❌ getTopEndpoints error:', error.message);
-      res.status(500).json({ success: false, message: "Server Error" });
+    console.error('❌ getTopEndpoints error:', error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
 exports.getStatusCodeDistribution = async (req, res) => {
   try {
-      const apiKey = req.headers['x-ford'];
-      if (!apiKey) {
-          return res.status(400).json({ success: false, message: "API Key missing" });
-      }
+    const apiKey = req.headers['x-ford'];
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: "API Key missing" });
+    }
 
-      const statusDistribution = await LogModel.aggregate([
-          { $match: { apiKey } },
-          {
-              $group: {
-                  _id: "$statusCode",
-                  count: { $sum: 1 }
-              }
-          },
-          { $sort: { count: -1 } }
-      ]);
+    const statusDistribution = await LogModel.aggregate([
+      { $match: { apiKey } },
+      {
+        $group: {
+          _id: "$statusCode",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
 
-      res.status(200).json({ success: true, data: statusDistribution });
+    res.status(200).json({ success: true, data: statusDistribution });
   } catch (error) {
-      console.error('❌ getStatusCodeDistribution error:', error.message);
-      res.status(500).json({ success: false, message: "Server Error" });
+    console.error('❌ getStatusCodeDistribution error:', error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
 exports.getMethodDistribution = async (req, res) => {
   try {
-      const apiKey = req.headers['x-ford'];
-      if (!apiKey) {
-          return res.status(400).json({ success: false, message: "API Key missing" });
-      }
+    const apiKey = req.headers['x-ford'];
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: "API Key missing" });
+    }
 
-      const methodDistribution = await LogModel.aggregate([
-          { $match: { apiKey } },
-          {
-              $group: {
-                  _id: "$method",
-                  count: { $sum: 1 }
-              }
-          },
-          { $sort: { count: -1 } }
-      ]);
+    const methodDistribution = await LogModel.aggregate([
+      { $match: { apiKey } },
+      {
+        $group: {
+          _id: "$method",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
 
-      res.status(200).json({ success: true, data: methodDistribution });
+    res.status(200).json({ success: true, data: methodDistribution });
   } catch (error) {
-      console.error('❌ getMethodDistribution error:', error.message);
-      res.status(500).json({ success: false, message: "Server Error" });
+    console.error('❌ getMethodDistribution error:', error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+exports.overview = async (req, res) => {
+  try {
+    const apiKey = req.headers['x-ford'];
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: "API Key missing" });
+    }
+
+    const overviewData = await LogModel.aggregate([
+      { $match: { apiKey } },
+      {
+        $addFields: {
+          bytesSentNumber: { $toDouble: "$bytesSent" }, // Convert 'bytesSent' string to number
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRequests: { $sum: 1 },
+          avgBytesSent: { $avg: "$bytesSentNumber" },
+          maxBytesSent: { $max: "$bytesSentNumber" }, // Find the maximum response size
+        }
+      }
+    ]);
+
+    if (!overviewData.length) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalRequests: 0,
+          avgBytesSent: 0,
+          maxBytesSent: 0
+        }
+      });
+    }
+
+    const { totalRequests, avgBytesSent, maxBytesSent } = overviewData[0];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalRequests,
+        avgBytesSent: Number(avgBytesSent.toFixed(2)),
+        maxBytesSent
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ overview error:', error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+exports.getRecentLogs = async (req, res) => {
+  try {
+    const apiKey = req.headers['x-ford'];
+
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'API Key missing in x-ford header'
+      });
+    }
+
+    const validKey = await APIKeyModel.findOne({ key: apiKey });
+    if (!validKey) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid API Key'
+      });
+    }
+
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+
+    // Fetch logs only for this API key within the last 3 minutes
+    const recentLogs = await LogModel.find({
+      apiKey: apiKey,
+      timestamp: { $gte: threeMinutesAgo }
+    }).sort({ timestamp: -1 });
+
+    //send logs to frontend
+    res.status(200).json({
+      success: true,
+      data: recentLogs
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching analytics:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
   }
 };
