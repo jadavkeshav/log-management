@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
-import { createContext } from "react";
-import { GitBranch, ClipboardCopy, Check, PieChart } from 'lucide-react';
-import StatsOverview from './StatsOverview';
-import RouteAnalysis from './RouteAnalysis';
+import { GitBranch, ClipboardCopy, Check } from 'lucide-react';
 import TrafficChart from './TrafficChart';
-import PieGraph from './PieGraph';
-import RecentLogs from './RecentLogs';
+import RouteAnalysis from './RouteAnalysis';
+import StatusCodeDistribution from './StatusCodeDistribution';
+import LiveLogStream from './LiveLogStream';
+import LogMetrics from './LogMetrics';
 import {
   lookInSession,
   removeFromSession,
@@ -14,89 +13,139 @@ import {
 } from "../utils/session";
 import toast from 'react-hot-toast';
 
-const UserContext = createContext({});
 function ProjectDetails({ project, onBack }) {
   const [copied, setCopied] = useState(false);
-  // const { userAuth } = useContext(UserContext);
-  const [userAuth, setUserAuth] = useState({});
-    // let userInSession = lookInSession("user");
-  
-    // userInSession
-    //   ? setUserAuth(JSON.parse(userInSession))
-    //   : setUserAuth({ token: null });
   const [yearlyData, setYearlyData] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
   const [endpoints, setEndpoints] = useState([]);
-  const [statusCodes, setStatusCodes] = useState([]);
+  const [statusCodes, setStatusCodes] = useState({});
   const [methods, setMethods] = useState([]);
-  const [stats, setStats] = useState({ "realtimeLogs": 25, "anomalies": 15, "dbLogs": 5 })
-  useEffect(() => { 
-    const fetchData = () => {
-      const token = JSON.parse(sessionStorage.getItem("user")).token || null;
-      if (!token) return;
-      axios
-        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-yearly-logs-overview", {
-          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
-        })
-        .then((response) => {
-          console.log("Log data fetched successfully:", response.data.data);
-          setYearlyData(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching log data:", error);
-        });
-        axios
-        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-monthly-logs-overview", {
-          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
-        })
-        .then((response) => {
-          console.log("Log data fetched successfully:", response.data.data);
-          setMonthlyData(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching log data:", error);
-        });
-        axios
-        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-top-endpoints", {
-          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
-        })
-        .then((response) => {
-          console.log("End points fetched successfully:", response.data.data);
-          setEndpoints(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching log data:", error);
-        });
-        axios
-        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-status-code-distribution", {
-          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
-        })
-        .then((response) => {
-          console.log("Status codes fetched successfully:", response.data.data);
-          setStatusCodes(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching log data:", error);
-        });
-        axios
-        .get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-method-distribution", {
-          headers: { "Authorization": `Bearer ${token}`, "x-ford": `${project.apiKey}`  },
-        })
-        .then((response) => {
-          console.log("Methods fetched successfully:", response.data.data);
-          setMethods(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching log data:", error);
-        });
-    };
-    fetchData();
+  const [liveLogs, setLiveLogs] = useState([]);
+  const [metrics, setMetrics] = useState({
+    avgBytes: 0,
+    maxBytes: 0,
+    anomalyPercentage: 0,
+    totalRequests: 0
+  });
+
+  const handleNewLog = useCallback((log) => {
+    setLiveLogs(prev => {
+      const newLogs = [...prev, log].slice(-100); // Keep last 100 logs
+      
+      // Update metrics
+      const bytes = parseInt(log.bytesSent) || 0;
+      const totalRequests = newLogs.length;
+      const avgBytes = Math.round(newLogs.reduce((acc, l) => acc + (parseInt(l.bytesSent) || 0), 0) / totalRequests);
+      const maxBytes = Math.max(...newLogs.map(l => parseInt(l.bytesSent) || 0));
+      const anomalies = newLogs.filter(l => l.is_anomaly).length;
+      
+      setMetrics({
+        avgBytes,
+        maxBytes,
+        anomalyPercentage: (anomalies / totalRequests) * 100,
+        totalRequests
+      });
+
+      // Update status codes
+      setStatusCodes(prev => {
+        const newCodes = { ...prev };
+        newCodes[log.statusCode] = (newCodes[log.statusCode] || 0) + 1;
+        return newCodes;
+      });
+
+      return newLogs;
+    });
   }, []);
+
+  useEffect(() => {
+    const token = JSON.parse(sessionStorage.getItem("user"))?.token;
+    if (!token) return;
+
+    const headers = { 
+      "Authorization": `Bearer ${token}`, 
+      "x-ford": project.apiKey 
+    };
+
+    // Fetch initial analytics data
+    const fetchData = () => {
+      axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-yearly-logs-overview", { headers })
+        .then(response => setYearlyData(response.data.data))
+        .catch(error => console.error("Error fetching yearly data:", error));
+
+      axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-monthly-logs-overview", { headers })
+        .then(response => setMonthlyData(response.data.data))
+        .catch(error => console.error("Error fetching monthly data:", error));
+
+      axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-top-endpoints", { headers })
+        .then(response => setEndpoints(response.data.data))
+        .catch(error => console.error("Error fetching endpoints:", error));
+
+      axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-status-code-distribution", { headers })
+        .then(response => setStatusCodes(response.data.data))
+        .catch(error => console.error("Error fetching status codes:", error));
+
+      axios.get(import.meta.env.VITE_BASE_URL + "/api/analytics/get-method-distribution", { headers })
+        .then(response => setMethods(response.data.data))
+        .catch(error => console.error("Error fetching methods:", error));
+    };
+
+    fetchData();
+    const dataInterval = setInterval(fetchData, 5000);
+
+    // WebSocket connection for live updates
+    const wsUrl = import.meta.env.VITE_BASE_URL.replace('http', 'ws') + '/ws';
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      socket.send(JSON.stringify({
+        type: 'auth',
+        apiKey: project.apiKey
+      }));
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'initial_logs') {
+          // Calculate initial metrics from historical logs
+          const initialMetrics = data.logs.reduce((acc, log) => {
+            const bytes = parseInt(log.bytesSent) || 0;
+            return {
+              avgBytes: acc.avgBytes + bytes,
+              maxBytes: Math.max(acc.maxBytes, bytes),
+              anomalyPercentage: acc.anomalyPercentage + (log.is_anomaly ? 1 : 0),
+              totalRequests: acc.totalRequests + 1
+            };
+          }, { avgBytes: 0, maxBytes: 0, anomalyPercentage: 0, totalRequests: 0 });
+
+          initialMetrics.avgBytes = Math.round(initialMetrics.avgBytes / initialMetrics.totalRequests) || 0;
+          initialMetrics.anomalyPercentage = (initialMetrics.anomalyPercentage / initialMetrics.totalRequests) * 100;
+          setMetrics(initialMetrics);
+          setLiveLogs(data.logs);
+        } else if (data.type === 'log') {
+          handleNewLog(data.log);
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      toast.error('Connection error. Retrying...');
+    };
+
+    return () => {
+      clearInterval(dataInterval);
+      socket.close();
+    };
+  }, [project.apiKey, handleNewLog]);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(project.apiKey);
     setCopied(true);
     toast.success("API Key copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -117,7 +166,6 @@ function ProjectDetails({ project, onBack }) {
         </button>
       </div>
 
-      {/* API Key Display */}
       <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 flex items-center justify-between">
         <div className="overflow-hidden">
           <p className="text-sm text-gray-600 mb-1 font-medium">API Key</p>
@@ -126,7 +174,6 @@ function ProjectDetails({ project, onBack }) {
         <button
           onClick={handleCopy}
           className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center transition"
-          style={{ "background-color": "blue" }}
         >
           {copied ? (
             <>
@@ -141,20 +188,29 @@ function ProjectDetails({ project, onBack }) {
           )}
         </button>
       </div>
-      <StatsOverview stats={stats} />
-      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Yearly Logs</b></h2>
-      <TrafficChart data={yearlyData} />
-      {/* <h2 style={{ "font-size": "20px", "color": "black" }}><b>Monthly Logs</b></h2>
-      <TrafficChart data={monthlyData} /> */}
-      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Methods</b></h2>
-      <PieGraph data={methods} />
 
-      <h2 style={{ "font-size": "20px", "color": "black" }}><b>Top Endpoints</b></h2>
-      <RouteAnalysis data={endpoints} />
-      {/* <StatsOverview stats={project.stats} />
-      <RouteAnalysis routes={project.routes} />
-      <TrafficChart data={project.trafficData} />
-      <RecentLogs logs={project.recentLogs} /> */}
+      <LogMetrics
+        avgBytes={metrics.avgBytes}
+        maxBytes={metrics.maxBytes}
+        anomalyPercentage={metrics.anomalyPercentage}
+        totalRequests={metrics.totalRequests}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Request Distribution</h2>
+          <TrafficChart data={yearlyData} />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Status Code Distribution</h2>
+          <StatusCodeDistribution data={statusCodes} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Live Log Stream</h2>
+        <LiveLogStream logs={liveLogs} />
+      </div>
     </div>
   );
 }
