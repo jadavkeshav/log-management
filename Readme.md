@@ -153,3 +153,21 @@ uvicorn server:app --reload
 
 ## Real-time Monitoring with WebSockets
 To connect to the WebSocket server for real-time updates, you can use any WebSocket client or implement one in your application.  
+
+
+
+
+
+
+
+## Team
+
+We are a team of passionate developers and data enthusiasts dedicated to building robust and scalable solutions for log management and anomaly detection.  
+
+### Contributors:
+- **[Keshav Jadav](https://github.com/jadavkeshav)**
+- **[RamaChandra Bharadwaj](https://github.com/RamachandraBharadwaj)**
+- **[Pardiv Kamishetty](https://github.com/pardivkamishetty)**
+- **[Kushal Bharadwaj](https://github.com/kushalbharadwaj18)**
+
+Feel free to reach out to us for any questions or collaboration opportunities!
