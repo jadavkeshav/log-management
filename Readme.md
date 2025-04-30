@@ -72,7 +72,7 @@ This repository contains a Log Management and Anomaly Detection system designed 
             "url": "/api/v1/data",
             "status_code": 200,
             "anomaly_score": 0.85
-            "isanamoly":True
+            "isanamoly":False
          }
       ],
       "prediction_time": "0.02"
