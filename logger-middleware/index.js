@@ -11,6 +11,28 @@ function createLoggerMiddleware({apiKey}) {
 
     let socket;
 
+    async function getLocationFromIpInfo(ip, token) {
+        try {
+            const res = await fetch(`https://ipinfo.io/${ip}?token=${token}`);
+            const data = await res.json();
+            const [latitude, longitude] = (data.loc || '').split(',');
+
+            return {
+                city: data.city,
+                region: data.region,
+                country: data.country,
+                postal: data.postal,
+                org: data.org,
+                latitude,
+                longitude,
+                timezone: data.timezone,
+            };
+        } catch (err) {
+            console.error('🌐 ipinfo.io error:', err.message);
+            return null;
+        }
+    }
+
     function initWebSocket() {
         socket = new WebSocket(WS_SERVER_URL);
 
@@ -40,14 +62,15 @@ function createLoggerMiddleware({apiKey}) {
     initWebSocket();
 
     return (req, res, next) => {
-        res.on('finish', () => {
+        res.on('finish', async () => {
             const clientIp = requestIp.getClientIp(req);
-
+            const location = await getLocationFromIpInfo(clientIp, '0ad2acb18515d6');
             const log = {
                 type: 'log',
                 apiKey: apiKey,
                 log: {
                     ip: clientIp,
+                    location: location,
                     timestamp: new Date().toISOString(),
                     method: req.method,
                     url: req.originalUrl,
