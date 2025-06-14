@@ -78,16 +78,15 @@ Every log is tagged with its API key and workspace context before being securely
 
 ---
 
-## 🖼️ Dashboard And Analysis Screenshots
+## 🖼️ Dashboard & Analysis Screenshots
 
 Below are example screenshots from the Logger-Mon dashboard:
 
 > Example:
 >
-> ![1745908825394](image/Readme/1745908825394.png)
+> `![Dashboard Overview](https://github.com/jadavkeshav/log-management/blob/main/logger-middleware/image/Readme/1745908825394.png)`
 >
-> ![1745908902421](image/Readme/1745908902421.png)
->
+> `![Log Stream View](https://github.com/jadavkeshav/log-management/raw/main/logger-middleware/image/Readme/1745908902421.png)`
 
 ---
 
