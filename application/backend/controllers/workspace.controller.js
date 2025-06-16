@@ -217,7 +217,7 @@ exports.deleteWorkspace = async (req, res, next) => {
       revoked: false,
     }).sort({ createdAt: -1 });
 
-    await workspace.remove();
+    await workspace.deleteOne();
     await User.findByIdAndUpdate(req.user._id, { $pull: { workspaces: req.params.id } });
     await APIKey.updateMany({ workspace: req.params.id }, { revoked: true });
 

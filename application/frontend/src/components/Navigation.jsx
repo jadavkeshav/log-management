@@ -7,82 +7,73 @@ import Sidebar from './Sidebar';
 function Navigation({ onNewProject, isAuthenticated, onLogout }) {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
   const handleLogout = () => {
     logOutUser();
-    onLogout(); // Call the logout function passed as a prop
-    navigate('/');// redirect to home
+    onLogout();
+    navigate('/');
   };
 
-
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="bg-white shadow-xl sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Activity className="h-8 w-8 text-blue-500" />
-            <span className="ml-2 text-xl font-semibold">LoggerMon</span>
+          <div className="flex items-center space-x-3">
+            <Activity className="h-9 w-9 text-blue-600 transition-transform hover:scale-110 duration-300" />
+            <Link to="/" className="text-2xl font-bold text-gray-900 tracking-tight hover:text-blue-600 transition-colors">
+              LoggerMon
+            </Link>
           </div>
-          <div className="flex items-center space-x-4">
-          <div>
-            <Link to="/docs"><h5>Docs</h5></Link>
-          </div>
-          <div>
-            <Link to="/getting-started"><h5>Getting Started</h5></Link>
-          </div>
+          <div className="flex items-center space-x-6">
+            <Link
+              to="/docs"
+              className="text-gray-700 hover:text-blue-600 font-medium text-sm tracking-wide transition-colors duration-200"
+            >
+              Docs
+            </Link>
+            <Link
+              to="/getting-started"
+              className="text-gray-700 hover:text-blue-600 font-medium text-sm tracking-wide transition-colors duration-200"
+            >
+              Getting Started
+            </Link>
             {isAuthenticated ? (
               <>
-                <Sidebar isOpen={isSidebarOpen} 
-          toggleSidebar={toggleSidebar} />
+                <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
                 <button
                   onClick={onNewProject}
-                  className="inline-flex items-center px-6 py-3 border-2 border-blue-600 rounded-lg shadow-lg 
-                  text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 
-                  hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 
-                  transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 
-                  focus:ring-blue-500 focus:ring-offset-2"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold rounded-lg shadow-md hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   <Plus className="h-5 w-5 mr-2 animate-pulse" />
-                  <span className="tracking-wide">New Project</span>
+                  New Project
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center px-6 py-3 border-2 border-red-600 rounded-lg 
-                  text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 
-                  hover:from-red-700 hover:to-red-800 transform hover:scale-105 
-                  transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 
-                  focus:ring-red-500 focus:ring-offset-2 shadow-lg"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-semibold rounded-lg shadow-md hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                 >
-                  <LogOut className="h-5 w-5 mr-2 text-white" />
-                  <span className="tracking-wide text-white"><b>Logout</b></span>
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Logout
                 </button>
               </>
             ) : (
               <>
                 <Link
                   to="/signin"
-                  className="inline-flex items-center px-6 py-3 border-2 border-green-600 rounded-lg 
-                  text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 
-                  hover:from-green-700 hover:to-green-800 transform hover:scale-105 
-                  transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 
-                  focus:ring-green-500 focus:ring-offset-2 shadow-lg"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-semibold rounded-lg shadow-md hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >
-                  <LogIn className="h-5 w-5 mr-2 text-white" />
-                  <span className="tracking-wide text-white"><b>Login</b></span>
+                  <LogIn className="h-5 w-5 mr-2" />
+                  Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex items-center px-6 py-3 border-2 border-purple-600 rounded-lg 
-                  text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 
-                  hover:from-purple-700 hover:to-purple-800 transform hover:scale-105 
-                  transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 
-                  focus:ring-purple-500 focus:ring-offset-2 shadow-lg"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-semibold rounded-lg shadow-md hover:from-purple-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                 >
-                  <UserPlus className="h-5 w-5 mr-2 text-white" />
-                  <span className="tracking-wide text-white"><b>Sign Up</b></span>
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  Sign Up
                 </Link>
               </>
             )}
